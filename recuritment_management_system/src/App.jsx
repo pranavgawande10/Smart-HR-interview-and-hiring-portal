@@ -40,7 +40,7 @@ const App = () => {
             <Route path="/support/termscondition"  element={<TermsConditions/>}/>
           </Routes>
         </main>
-
+        
         <Footer />
       </div>
     </BrowserRouter>
