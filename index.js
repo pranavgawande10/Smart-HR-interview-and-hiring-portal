@@ -18,9 +18,7 @@ app.use(cors(corsOptions));
 
 const port = process.env.PORT || 8000;
 
-app.get("/", (req, res) => {
-  res.send("Heloo Rj");
-});
+
 
 
 connectDB()
