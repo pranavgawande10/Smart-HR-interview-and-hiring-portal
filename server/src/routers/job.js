@@ -5,7 +5,7 @@ const Job = require("../models/job.js");
 const { userAuth } = require("../middlewares/auth.js");
 
 
-// ✅ HR creates a job post
+
 jobRouter.post("/job/create", userAuth, async (req, res) => {
     try {
         const { title, description, location, vacancies } = req.body;
@@ -35,7 +35,7 @@ jobRouter.post("/job/create", userAuth, async (req, res) => {
 });
 
 
-// ✅ HR views their own job posts
+
 jobRouter.get("/job/myjobs", userAuth, async (req, res) => {
     try {
         const jobs = await Job.find({ createdBy: req.user._id })

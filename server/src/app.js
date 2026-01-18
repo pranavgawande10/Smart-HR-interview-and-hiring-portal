@@ -4,9 +4,11 @@ const app = express();
 const cookieParser = require("cookie-parser");
 const dotenv = require("dotenv");
 const cors = require("cors");
+
 dotenv.config();
 const PORT = process.env.PORT;
-console.log(PORT);
+
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors(
@@ -15,7 +17,8 @@ app.use(cors(
         credentials: true
     }
 ))
-app.use(cookieParser());
+
+
 
 const authRouter = require("./routers/auth.js");
 const profileRouter = require("./routers/profile.js");
