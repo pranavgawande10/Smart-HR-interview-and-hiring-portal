@@ -1,6 +1,8 @@
  const jwt  = require("jsonwebtoken");
 const User = require("../models/user");
 const dotenv = require("dotenv");
+
+
 dotenv.config();
 
 
@@ -32,7 +34,8 @@ dotenv.config();
     }
     catch(error)
     {
-         res.status(400).send("Error : " + error );
+         res.status(401).send("Unauthorized: " + error.message);
+
     }
  }
 

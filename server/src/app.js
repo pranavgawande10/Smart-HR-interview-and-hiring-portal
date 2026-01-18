@@ -19,9 +19,13 @@ app.use(cookieParser());
 
 const authRouter = require("./routers/auth.js");
 const profileRouter = require("./routers/profile.js");
+const jobRouter = require("./routers/job.js");
+
 
 app.use("/", profileRouter);
 app.use("/", authRouter);
+app.use("/", jobRouter);
+
 
 
 connectDB()
