@@ -11,7 +11,8 @@ dotenv.config();
     {
         //read the token fron req cookies
         //validate the token 
-        //find the user
+        //find the user   
+        
         const {token } = req.cookies;
         if(!token)
         {

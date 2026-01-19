@@ -29,6 +29,6 @@ auth.js in middlewares (userAuth)
 - in utils folder (validation.js)  
 
 # mail transporter (server -> src-> utils )
-- in utils folder (sendEmail.js) 
+- in utils folder (sendEmail.js) using Nodemailer via gamil 
 
 
