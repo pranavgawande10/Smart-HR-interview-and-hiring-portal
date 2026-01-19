@@ -5,10 +5,10 @@
 - in models folder (user.js and job.js)
 
 # POST API
-- signup
+- signup => signup the HR
 - login
 - logout
-- forgotpassword
+- forgotpassword => via NodeMailer
 - resetpassword
 - job/create
 
