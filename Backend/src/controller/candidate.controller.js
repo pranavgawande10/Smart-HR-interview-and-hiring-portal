@@ -5,6 +5,12 @@ import { ApiError } from "../utils/api-error.js";
 import { ApiResponse } from "../utils/api-response.js";
 import { upload } from "../middleware/multer.middleware.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import {
+  emailVerificationMailgenContent,
+  sendEmail,
+  passwordResetMailgenContent,
+} from "../utils/mail.js";
+import crypto from "crypto";
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -24,7 +30,7 @@ const generateAccessAndRefreshTokens = async (userId) => {
   } catch (error) {
     throw new ApiError(
       500,
-      "Something went wrong whle generating access and refresh tokens"
+      "Something went wrong whle generating access and refresh tokens",
     );
   }
 };
@@ -70,8 +76,25 @@ const registerUser = asyncHandler(async (req, res) => {
     profilePhoto: profilePhoto.url,
   });
 
+  const { unHashedToken, hashedToken, tokenExpiry } =
+    user.generateTemporaryToken();
+
+  user.emailVerificationToken = hashedToken;
+  user.emailVerificationTokenExpiry = tokenExpiry;
+
+  await user.save({ validateBeforeSave: false });
+
+  await sendEmail({
+    email: user.email,
+    subject: "Please verify your mail",
+    mailgenContent: emailVerificationMailgenContent(
+      user.name,
+      `${req.protocol}://${req.get("host")}/api/v1/candidates/verify-email/${unHashedToken}`,
+    ),
+  });
+
   const createdUser = await Candidate.findById(user._id).select(
-    "-password -refreshToken"
+    "-password -refreshToken -emailVerificationToken -emailVerificationExpiry",
   );
 
   if (!createdUser) {
@@ -82,7 +105,7 @@ const registerUser = asyncHandler(async (req, res) => {
     new ApiResponse(201, {
       message: "User Registered Successfully",
       user: createdUser,
-    })
+    }),
   );
 });
 
@@ -104,11 +127,11 @@ const loginUser = asyncHandler(async (req, res) => {
   }
 
   const { accessTokens, refreshTokens } = await generateAccessAndRefreshTokens(
-    user._id
+    user._id,
   );
 
   const loggedInUser = await Candidate.findById(user._id).select(
-    "-password -refreshToken"
+    "-password -refreshToken",
   );
 
   if (!loggedInUser) {
@@ -128,7 +151,7 @@ const loginUser = asyncHandler(async (req, res) => {
       new ApiResponse(200, {
         message: "User Logged In Successfully",
         user: { loggedInUser, accessTokens, refreshTokens },
-      })
+      }),
     );
 });
 
@@ -142,11 +165,11 @@ const logoutUser = asyncHandler(async (req, res) => {
     },
     {
       new: true,
-    }
+    },
   );
 
   const options = {
-    htttpOnly: true,
+    httpOnly: true,
     secure: process.env.NODE_ENV === "Production",
   };
 
@@ -154,33 +177,135 @@ const logoutUser = asyncHandler(async (req, res) => {
     .status(200)
     .cookie("accessToken", options)
     .cookie("refreshToken", options)
-    .json(
-      new ApiResponse(200, "User Logged Out Successfully")
-    );
+    .json(new ApiResponse(200, "User Logged Out Successfully"));
+});
+
+const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  if ([email].some((field) => !field?.trim())) {
+    throw new ApiError(400, "Email feild is required");
+  }
+
+  const user = await Candidate.findOne({ email });
+
+  if (!user) {
+    throw new ApiError(400, "User of this Email is not registered yet");
+  }
+
+  const { unHashedToken, hashedToken, tokenExpiry } =
+    user.generateTemporaryToken();
+
+  user.forgotPasswordToken = hashedToken;
+  user.forgotPasswordTokenExpiry = tokenExpiry;
+
+  await user.save({ validateBeforeSave: false });
+
+  const resetUrl = `${req.protocol}://${req.get("host")}/api/v1/candidates/reset-password/${unHashedToken}`;
+
+  await sendEmail({
+    email: user.email,
+    subject: "Please Reset your Password",
+    mailgenContent: passwordResetMailgenContent(user.name, resetUrl),
+  });
+
+  return res.send(200).json(200, "Reset Email sent Successfully");
 });
 
 const updatePassword = asyncHandler(async (req, res) => {
-  const {oldPassword, newPassword} = req.body;
-  
-  const user = await Candidate.findById(req.candidate?._id);
+  const { token } = req.params;
+  const { newPassword } = req.body;
 
-  if ([oldPassword, newPassword].some((field) => !field?.trim())) {
-    throw new ApiError(400, "All fields are required");
+  if ([newPassword].some((field) => !field?.trim())) {
+    throw new ApiError(400, "Password fields are required");
   }
 
-  const isPasswordValid = await user.comparePassword(oldPassword);
+  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
-  if (!isPasswordValid) {
-    throw new ApiError(400, "Old Password is incorrect");
+  const user = await Candidate.findOne({
+    forgotPasswordToken: hashedToken,
+    forgotPasswordTokenExpiry: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    throw new ApiError(400, "Invalid reset password Link");
   }
-
 
   user.password = newPassword;
-  await user.save({validateBeforeSave: false});
+  user.forgotPasswordToken = undefined;
+  user.forgotPasswordTokenExpiry = undefined;
+
+  await user.save({ validateBeforeSave: false });
+
+  return res.status(200).json(new ApiResponse(200, "Password Updated Successfully"));
+});
+
+const updateProfilePhoto = asyncHandler(async (req, res) => {
+  const profilePhotoLocalPath = req.file?.path;
+  if (!profilePhotoLocalPath) {
+    throw new ApiError(400, "Profile Photo is required");
+  }
+
+  const profilePhoto = await uploadOnCloudinary(profilePhotoLocalPath);
+
+  if (!profilePhoto?.url) {
+    throw new ApiError(500, "Cloudinary did not return a valid URL");
+  }
+
+  const user = await Candidate.findByIdAndUpdate(
+    req.candidate?._id,
+    {
+      $set: {
+        profilePhoto: profilePhoto.url,
+      },
+    },
+    {
+      new: true,
+    },
+  ).select("-password -refreshToken");
 
   res.status(200).json(
-    new ApiResponse(200, "Password Updated Successfully")
-  )
-})
+    new ApiResponse(200, {
+      message: "Profile Photo Updated Successfully",
+      user,
+    }),
+  );
+});
 
-export { registerUser, generateAccessAndRefreshTokens, loginUser, logoutUser, updatePassword };
+const verifyEmail = asyncHandler(async (req, res) => {
+  const { verificationToken } = req.params;
+
+  let hashedToken = crypto
+    .createHash("sha256")
+    .update(verificationToken)
+    .digest("hex");
+  console.log("Received Token:", verificationToken);
+  console.log("Hashed Version:", hashedToken);
+
+  const user = await Candidate.findOne({
+    emailVerificationToken: hashedToken,
+    emailVerificationTokenExpiry: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    return res.status(400).send("Invalid or expired verification link");
+  }
+
+  user.isEmailVerified = true;
+  user.emailVerificationToken = undefined;
+  user.emailVerificationExpiry = undefined;
+
+  await user.save({ validateBeforeSave: false });
+
+  return res.send("<h3>Email verified successfully ✅</h3>");
+});
+
+export {
+  registerUser,
+  generateAccessAndRefreshTokens,
+  loginUser,
+  logoutUser,
+  updatePassword,
+  updateProfilePhoto,
+  verifyEmail,
+  forgotPassword
+};

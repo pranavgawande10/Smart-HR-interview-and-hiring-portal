@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 
 const candidateSchema = new mongoose.Schema(
   {
@@ -48,10 +49,26 @@ const candidateSchema = new mongoose.Schema(
     refreshToken: {
       type: String,
     },
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    forgotPasswordToken: {
+      type: String,
+    },
+    forgotPasswordTokenExpiry: {
+      type: Date,
+    },
+    emailVerificationToken: {
+      type: String,
+    },
+    emailVerificationTokenExpiry: {
+      type: Date,
+    },
   },
   {
     timestamps: { createdAt: "createdAt", updatedAt: "updatedAt" },
-  }
+  },
 );
 
 candidateSchema.pre("save", async function () {
@@ -74,7 +91,7 @@ candidateSchema.methods.generateAccessToken = function () {
     process.env.ACCESS_TOKEN_SECRET,
     {
       expiresIn: process.env.ACCESS_TOKEN_EXPIRY || "15m",
-    }
+    },
   );
 };
 
@@ -86,8 +103,19 @@ candidateSchema.methods.generateRefreshToken = function () {
     process.env.REFRESH_TOKEN_SECRET,
     {
       expiresIn: process.env.REFRESH_TOKEN_EXPIRY || "7d",
-    }
+    },
   );
 };
 
+candidateSchema.methods.generateTemporaryToken = function () {
+  const unHashedToken = crypto.randomBytes(32).toString("hex");
+
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(unHashedToken)
+    .digest("hex");
+
+  const tokenExpiry = Date.now() + 20 * 60 * 1000;
+  return { unHashedToken, hashedToken, tokenExpiry };
+};
 export const Candidate = mongoose.model("Candidate", candidateSchema);
