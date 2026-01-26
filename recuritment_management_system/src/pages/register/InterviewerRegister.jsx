@@ -7,6 +7,7 @@ const InterviewerRegister = () => {
       title="Interviewer Registration"
       role="Interviewer"
       buttonText="Register as Interviewer"
+      login='/login/interviewer'
       fields={[
         { type: "text", placeholder: "Full Name" },
         { type: "email", placeholder: "Email Address" },

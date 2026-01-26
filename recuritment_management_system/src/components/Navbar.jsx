@@ -10,7 +10,7 @@ const Navbar = () => {
         <nav className="bg-cyan-700 text-white relative">
             <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
 
-                <h1 className="text-2xl font-bold tracking-wide">MyApp</h1>
+                <h1 className="text-2xl font-bold tracking-wide">Somnath</h1>
 
                 <ul className="hidden md:flex items-center gap-8 text-lg">
                     <Link className="hover:text-cyan-200" to="/">Home</Link>

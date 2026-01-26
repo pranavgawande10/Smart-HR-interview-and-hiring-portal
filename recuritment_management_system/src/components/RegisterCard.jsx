@@ -1,6 +1,7 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
-const RegisterCard = ({ title, role, fields, buttonText }) => {
+const RegisterCard = ({ title, role, fields, buttonText ,login}) => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
@@ -31,8 +32,9 @@ const RegisterCard = ({ title, role, fields, buttonText }) => {
         </form>
 
         <p className="text-sm text-center text-gray-500 mt-4">
-          Already have an account? <span className="text-blue-600 cursor-pointer">Login</span>
+          Already have an account? <Link className="text-blue-600 cursor-pointer" to={login} >Login</Link>
         </p>
+        
       </div>
     </div>
   );

@@ -7,6 +7,7 @@ const CandidateRegister = () => {
       title="Candidate Registration"
       role="Student / Candidate"
       buttonText="Register as Candidate"
+      login='/login/candidate'
       fields={[
         { type: "text", placeholder: "Full Name" },
         { type: "email", placeholder: "Email Address" },
