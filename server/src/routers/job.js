@@ -8,6 +8,10 @@ const { userAuth } = require("../middlewares/auth.js");
 
 jobRouter.post("/job/create", userAuth, async (req, res) => {
     try {
+        if (req.user.role !== "HR") {
+            return res.status(403).json({ message: "Only HR can create jobs" });
+        }
+
         const { title, description, location, vacancies } = req.body;
 
         if (!title || !description || !location || !vacancies) {
@@ -33,6 +37,7 @@ jobRouter.post("/job/create", userAuth, async (req, res) => {
         res.status(400).send("Error: " + error.message);
     }
 });
+
 
 
 

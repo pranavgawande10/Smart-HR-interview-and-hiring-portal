@@ -1,13 +1,10 @@
 const validator = require("validator");
 
 const signupValidation = (req) => {
-    const { name, email, password, companyName } = req.body;
+    const { name, email, password, companyName, role } = req.body;
 
-    if (!name ) {
-        throw new Error(" name are required!");
-    }
-     if (!companyName ) {
-        throw new Error(" companyName are required!");
+    if (!name) {
+        throw new Error("Name is required!");
     }
 
     if (!email || !validator.isEmail(email)) {
@@ -19,7 +16,13 @@ const signupValidation = (req) => {
             "Password must be strong (min 8 chars, uppercase, lowercase, number, symbol)"
         );
     }
+
+    
+    if ((role === "HR" || !role) && !companyName) {
+        throw new Error("companyName is required for HR!");
+    }
 };
+
 
 const validateEditProfileData = (req)=>{
     const allowedEditFields = ["name" ,"email" , "companyName","profilePhoto"];

@@ -23,6 +23,8 @@ app.use(cors(
 const authRouter = require("./routers/auth.js");
 const profileRouter = require("./routers/profile.js");
 const jobRouter = require("./routers/job.js");
+const interviewerRouter = require("./routers/interviewer");
+app.use("/", interviewerRouter);
 
 
 app.use("/", profileRouter);

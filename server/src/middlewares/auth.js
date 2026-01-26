@@ -1,43 +1,26 @@
- const jwt  = require("jsonwebtoken");
+const jwt = require("jsonwebtoken");
 const User = require("../models/user");
-const dotenv = require("dotenv");
 
+const userAuth = async (req, res, next) => {
+    try {
+        const token = req.cookies?.token;
 
-dotenv.config();
-
-
- const userAuth = async (req,res,next)=>{
-    try 
-    {
-        //read the token fron req cookies
-        //validate the token 
-        //find the user   
-        
-        const {token } = req.cookies;
-        if(!token)
-        {
-          throw new Error("token not valid!!");
+        if (!token) {
+            return res.status(401).json({ message: "Unauthorized: No token" });
         }
 
-        const decodeddata = await jwt.verify(token , process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-        const { _id} = decodeddata;
-        const user = await User.findById(_id);
-      
-        if(!user)
-        {
-            throw new Error("User not found!!!");
+        const user = await User.findById(decoded._id);
+        if (!user) {
+            return res.status(401).json({ message: "Unauthorized: User not found" });
         }
-    
+
         req.user = user;
-         next();  
-    
+        next();
+    } catch (error) {
+        return res.status(401).json({ message: "Unauthorized", error: error.message });
     }
-    catch(error)
-    {
-         res.status(401).send("Unauthorized: " + error.message);
+};
 
-    }
- }
-
- module.exports = { userAuth };
+module.exports = { userAuth };

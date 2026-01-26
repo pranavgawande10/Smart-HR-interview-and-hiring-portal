@@ -1,12 +1,9 @@
 const mongoose = require("mongoose");
-const validator = require("validator");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const dotenv = require("dotenv");
-dotenv.config();
+require("dotenv").config();
 
-
-const hrSchema = new mongoose.Schema({
+const userSchema = new mongoose.Schema({
     name: {
         type: String,
         required: true,
@@ -27,36 +24,35 @@ const hrSchema = new mongoose.Schema({
 
     role: {
         type: String,
+        enum: ["HR", "INTERVIEWER", "CANDIDATE"],
         default: "HR"
     },
 
     companyName: {
-        type: String,
-        required: true
+        type: String
     },
 
-    profilePhoto: {
+    skills: [String],              // interviewer
+    experienceYears: Number,       // interviewer
+    availabilityStatus: {
         type: String,
-        default: "enter photo url"   // or null
+        enum: ["AVAILABLE", "BUSY", "OFFLINE"],
+        default: "AVAILABLE"
     },
 
+    profilePhoto: String
 }, { timestamps: true });
 
-hrSchema.methods.getJWT = async function () {
-    const user = this;
-    const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
-
-    return token;
+userSchema.methods.getJWT = function () {
+    return jwt.sign(
+        { _id: this._id, role: this.role },
+        process.env.JWT_SECRET,
+        { expiresIn: "1h" }
+    );
 };
 
-hrSchema.methods.validatePassword = async function (passwordIntputByUser) {
-    const user = this;
-    const passwordHash = user.password;
+userSchema.methods.validatePassword = function (password) {
+    return bcrypt.compare(password, this.password);
+};
 
-    const isPasswordvalid = await bcrypt.compare(passwordIntputByUser, passwordHash);
-
-    return isPasswordvalid;
-
-}
-
-module.exports = mongoose.model("HR", hrSchema);
+module.exports = mongoose.model("User", userSchema);

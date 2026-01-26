@@ -18,18 +18,29 @@ authRouter.post("/signup" , async (req,res)=>{
         signupValidation(req);
 
         //encrypt the password
-        const {name, email,password ,companyName} = req.body;
+        const { 
+  name, 
+  email, 
+  password, 
+  companyName, 
+  role, 
+  skills, 
+  experienceYears 
+} = req.body;
         const passwordHash = await bcrypt.hash(password , 10);
 
-        console.log(passwordHash);
+        
 
         //create a new instance of user model
         const user = new User({
-            name,
-            email,
-            companyName,
-            password : passwordHash,
-        });
+    name,
+    email,
+    password: passwordHash,
+    role: role || "HR",
+    companyName: role === "HR" ? companyName : undefined,
+    skills: role === "INTERVIEWER" ? skills : undefined,
+    experienceYears: role === "INTERVIEWER" ? experienceYears : undefined
+});
 
         const data = req.body;
         await user.save();
