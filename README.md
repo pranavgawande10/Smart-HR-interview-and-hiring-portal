@@ -31,100 +31,138 @@ auth.js in middlewares (userAuth)
 # mail transporter (server -> src-> utils )
 - in utils folder (sendEmail.js) 
 
-# Interview & Feedback Module (Backend)
+Interview & Feedback Module (Backend)
 
-- This module handles interview scheduling, interviewer dashboards, and interview feedback for a hiring platform.
+This module manages interview scheduling, interviewer dashboards, and structured interview feedback for a hiring platform.
+It is designed with role-based access, secure authentication, and MongoDB relationships using references and population.
+
 📌 Features
 
-- Schedule interviews for candidates
+Schedule interviews for candidates
 
-- Fetch all interviews assigned to an interviewer
+Fetch all interviews assigned to a specific interviewer
 
-- Submit structured interview feedback
+Submit structured interview feedback
 
-- Role-based secure access using authentication
+Role-based secure access using authentication middleware
 
-- MongoDB relationships using references and population
+MongoDB schema relationships with ref and populate()
 
 🧱 Models
-1️⃣ Interview Model (src -> models ->interview.js)
+1️⃣ Interview Model
 
-# Represents an interview scheduled for a candidate.
+Path: src/models/interview.js
 
-- Fields:
+Represents an interview scheduled for a candidate.
 
-- candidateId → Reference to User (Candidate)
+Fields
 
-- interviewerId → Reference to User (Interviewer)
+candidateId → Reference to User (Candidate)
 
-- jobId → Reference to Job
+interviewerId → Reference to User (Interviewer)
 
-- round → TECHNICAL | MANAGERIAL | HR
+jobId → Reference to Job
 
-- scheduledAt → Interview date & time
+round → TECHNICAL | MANAGERIAL | HR
 
-- meetingLink → Online meeting link
+scheduledAt → Interview date & time
 
-- status → SCHEDULED | COMPLETED | NO_SHOW
+meetingLink → Online meeting link
 
-- timestamps → Created & Updated time
+status → SCHEDULED | COMPLETED | NO_SHOW
 
-2️⃣ Interview Feedback Model (src -> models -> interviewFeedback.js)
+timestamps → Created & Updated time
 
-# Stores feedback submitted by the interviewer.
+2️⃣ Interview Feedback Model
 
-- Fields:
+Path: src/models/interviewFeedback.js
 
-- interviewId → Reference to Interview
+Stores feedback submitted by the interviewer after the interview.
 
-- interviewerId → Reference to User
+Fields
 
-- technicalScore → Numeric rating
+interviewId → Reference to Interview
 
-- communication → Numeric rating
+interviewerId → Reference to User
 
-- problemSolving → Numeric rating
+technicalScore → Numeric rating
 
-- recommendation → HIRE | HOLD | REJECT
+communication → Numeric rating
 
-- comments → Text feedback
+problemSolving → Numeric rating
 
-- timestamps
+recommendation → HIRE | HOLD | REJECT
 
+comments → Text feedback
 
-🔐 Authentication
+timestamps
 
-- All interviewer routes are protected using the userAuth middleware.
+🔐 Authentication & Authorization
 
-- req.user._id is used to identify the logged-in interviewer.
+All interviewer routes are protected using userAuth middleware
 
-- Only authenticated interviewers can view interviews and submit feedback.
+Logged-in interviewer is identified using req.user._id
 
+Only authenticated interviewers can:
 
-🚀 API Endpoints (src -> routers -> interviewers.js)
-1️⃣ Create Interview (Testing Only) 
-   [POST /interview/create-test]
-   Description: Creates an interview entry (used for testing).
+View assigned interviews
+
+Submit interview feedback
+
+🚀 API Endpoints
+
+Path: src/routers/interviewers.js
+
+1️⃣ Create Interview (Testing Only)
+
+POST /interview/create-test
+
+Description:
+Creates an interview entry.
+
+⚠️ This route is meant only for testing and should be removed or protected in production.
 
 2️⃣ Get Interviews for Interviewer
-   [GET /interviewer/interviews]
-   Description: Fetches all interviews assigned to the logged-in interviewer.
+
+GET /interviewer/interviews
+
+Description:
+Fetches all interviews assigned to the logged-in interviewer.
+
+Details:
+
+Uses populate() to fetch:
+
+Candidate details
+
+Job details
 
 3️⃣ Submit Interview Feedback
-   [POST /interviewer/feedback]
-   Description: interviewer is able to give the feedback 
-( 
+
+POST /interviewer/feedback
+
+Description:
+Allows an interviewer to submit structured feedback for an interview.
+
+Sample Request Body
+{
   "technicalScore": 8,
   "communication": 7,
   "problemSolving": 9,
   "recommendation": "HIRE",
   "comments": "Strong problem-solving skills and good communication."
-)
+}
 
 ✅ Notes
 
-- populate() is used to fetch related job and candidate details.
+populate() is used to fetch related job and candidate data efficiently
 
-- Feedback is always linked to an interview and interviewer.
+Feedback is always linked to:
 
-- The create-test route should be removed or protected in production.
+A specific interview
+
+The authenticated interviewer
+
+Ensure the create-test route is disabled or protected before deploying to production
+
+If you want, I can also:
