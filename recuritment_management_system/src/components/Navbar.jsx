@@ -7,7 +7,7 @@ const Navbar = () => {
     const [registerOpen, setRegisterOpen] = useState(false);
 
     return (
-        <nav className="bg-cyan-700 text-white relative">
+        <nav className="bg-cyan-500 text-white relative">
             <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
 
                 <h1 className="text-2xl font-bold tracking-wide">Somnath</h1>
