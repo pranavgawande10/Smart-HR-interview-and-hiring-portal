@@ -8,8 +8,7 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import {
   emailVerificationMailgenContent,
   sendEmail,
-  passwordResetMailgenContent,
-} from "../utils/mail.js";
+  passwordResetMailgenContent,} from "../utils/mail.js";
 import crypto from "crypto";
 
 const generateAccessAndRefreshTokens = async (userId) => {
@@ -309,3 +308,5 @@ export {
   verifyEmail,
   forgotPassword
 };
+
+
