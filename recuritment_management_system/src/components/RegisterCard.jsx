@@ -20,7 +20,7 @@ const RegisterCard = ({ title, role, fields, buttonText }) => {
 
     try {
       const res = await axios.post(
-        "http://localhost:3000/api/v1/auth/register",
+        "http://localhost:3000/api/v1/candidates",
         {
           role,
           ...formData,
