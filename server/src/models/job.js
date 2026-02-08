@@ -22,6 +22,11 @@ const jobSchema = new mongoose.Schema({
         required: true,
         min: 1
     },
+    experience: {
+        type: String,
+        required :true,
+        default: "Freshers"
+    },
 
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
