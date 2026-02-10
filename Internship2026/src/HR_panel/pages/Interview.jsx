@@ -1,9 +1,8 @@
-import Layout from "../components/Layout";
 import PageHeader from "../components/PageHeader";
 
 const Interview = () => {
   return (
-    <Layout>
+    <>
       <PageHeader
         title="Interviews"
         subtitle="Upcoming interview schedules"
@@ -13,7 +12,7 @@ const Interview = () => {
         <InterviewCard name="Sarah Johnson" time="10:00 AM" />
         <InterviewCard name="Robert Brown" time="2:00 PM" />
       </div>
-    </Layout>
+    </>
   );
 };
 
