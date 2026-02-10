@@ -1,8 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
-
 import Home from "./pages/nav/Home";
 import About from "./pages/nav/About";
 import Contact from "./pages/nav/Contact";
@@ -16,6 +14,7 @@ import CandidateRegister from "./pages/register/CandidateRegister";
 import HelpCenter from "./pages/support/HelpCenter";
 import PrivacyPolicy from "./pages/support/PrivacyPolicy";
 import TermsConditions from "./pages/support/TermsConditions";
+import AdminLogin from "./pages/login/AdminLogin";
 
 const App = () => {
   return (
@@ -23,12 +22,13 @@ const App = () => {
       <div className="min-h-screen flex flex-col">
         <Navbar />
 
-        <main className="flex-grow ">
+        <main className="grow ">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/services" element={<Services />} />
+            <Route path="/login/admin" element={<AdminLogin />} />
             <Route path="/login/hr" element={<HrLogin />} />
             <Route path="/login/interviewer" element={<InterviewerLogin />} />
             <Route path="/login/candidate" element={<CandidateLogin />} />

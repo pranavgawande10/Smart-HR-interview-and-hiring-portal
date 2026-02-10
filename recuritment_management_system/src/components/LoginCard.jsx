@@ -14,7 +14,7 @@ const LoginCard = ({ title, role, buttonText }) => {
 
     try {
       const res = await axios.post(
-        "http://localhost:3000/api/v1/login",
+        "http://localhost:3000/api/v1/candidates/login",
         {
           email,
           password,

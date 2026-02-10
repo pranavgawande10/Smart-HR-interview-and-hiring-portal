@@ -1,6 +1,6 @@
 import React from "react";
 import RoleCard from "../../components/RoleCard";
-
+import { Link } from "react-router-dom";
 const Home = () => {
   return (
     <div className="w-full">
@@ -31,18 +31,22 @@ const Home = () => {
             <RoleCard
               title="Admin"
               description="Manage users, roles, and system settings"
+              login="/login/admin"
             />
             <RoleCard
               title="HR"
               description="Post jobs, shortlist candidates, schedule interviews"
+              login="/login/hr"
             />
             <RoleCard
               title="Interviewer"
               description="Evaluate candidates and provide feedback"
+              login="/login/interviewer"
             />
             <RoleCard
               title="Candidate"
               description="Apply for jobs and track application status"
+              login="/login/candidate"
             />
           </div>
         </div>
