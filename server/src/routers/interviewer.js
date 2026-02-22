@@ -3,6 +3,7 @@ const router = express.Router();
 const Interview = require("../models/interview");
 const Feedback = require("../models/interviewFeedback");
 const { userAuth } = require("../middlewares/auth");
+const authorizeRoles = require("../middlewares/authorize");
 
 router.post("/interview/create-test", async (req, res) => {
     try {
@@ -15,7 +16,7 @@ router.post("/interview/create-test", async (req, res) => {
 });
 
 
-router.get("/interviewer/interviews", userAuth, async (req, res) => {
+router.get("/interviewer/interviews", userAuth,authorizeRoles("INTERVIEWER"), async (req, res) => {
     const interviews = await Interview.find({
         interviewerId: req.user._id
     }).populate("jobId candidateId");
@@ -23,7 +24,9 @@ router.get("/interviewer/interviews", userAuth, async (req, res) => {
     res.json(interviews);
 });
 
-router.post("/interviewer/feedback", userAuth, async (req, res) => {
+router.post("/interviewer/feedback",userAuth,  authorizeRoles("INTERVIEWER"),  async (req, res) => {
+    
+
     const feedback = new Feedback({
         ...req.body,
         interviewerId: req.user._id

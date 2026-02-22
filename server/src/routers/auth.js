@@ -36,7 +36,7 @@ authRouter.post("/signup" , async (req,res)=>{
     name,
     email,
     password: passwordHash,
-    role: role || "HR",
+    role: role || "HR", 
     companyName: role === "HR" ? companyName : undefined,
     skills: role === "INTERVIEWER" ? skills : undefined,
     experienceYears: role === "INTERVIEWER" ? experienceYears : undefined
@@ -53,39 +53,51 @@ authRouter.post("/signup" , async (req,res)=>{
     
 });
 
-authRouter.post("/login" , async(req,res)=>{
-    try{
-        const {email , password} = req.body;
-        if(!(validator.isEmail(email)))
-        {
-            res.status(400).send("Please enter valid EmailId!");
-        }
-        
+authRouter.post("/login", async (req, res) => {
+    try {
+        const { email, password, role } = req.body;
 
-        const userpresent  = await User.findOne({email : email});
-        if(!userpresent)
-        {
-            throw new Error("Invalid Credentials!");
+        if (!email || !password || !role) {
+            return res.status(400).json({ message: "All fields are required!" });
         }
-        const isPasswordvalid = await userpresent.validatePassword(password);
 
-        if(isPasswordvalid)
-        {
-            //create a JWT token
-            const token = await userpresent.getJWT();
-            //add token to cookie and send the response back to user !!
-            res.cookie("token" , token , {httpOnly: true,maxAge: 60 * 60 * 1000,}); 
-            
-            res.send("Login successfully!!!");
+        if (!validator.isEmail(email)) {
+            return res.status(400).json({ message: "Invalid email format" });
         }
-        else
-        {
-            throw new Error("Invalid credentials!!");
+
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.status(400).json({ message: "Invalid credentials" });
         }
-    }
-    catch(error)
-    {
-        res.status(400).send("login failed please enter valid data!" + error.message);
+
+        // 🔥 ROLE CHECK
+        if (user.role !== role) {
+            return res.status(403).json({ message: "Role mismatch! Please select correct role." });
+        }
+
+        const isPasswordValid = await user.validatePassword(password);
+
+        if (!isPasswordValid) {
+            return res.status(400).json({ message: "Invalid credentials" });
+        }
+
+        const token = user.getJWT();
+
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: false, 
+            maxAge: 60 * 60 * 1000
+        });
+
+        res.status(200).json({
+            message: "Login successful",
+            role: user.role,
+            name: user.name
+        });
+
+    } catch (error) {
+        res.status(400).json({ message: error.message });
     }
 });
 
