@@ -25,20 +25,20 @@ const userSchema = new mongoose.Schema({
     role: {
         type: String,
         enum: ["HR", "INTERVIEWER", "CANDIDATE"],
-        default: "HR"
+        required:true
     },
 
     companyName: {
         type: String
     },
 
-    skills: [String],              // interviewer
+    //skills: [String],              // interviewer
     experienceYears: Number,       // interviewer
     availabilityStatus: {
         type: String,
         enum: ["AVAILABLE", "BUSY", "OFFLINE"],
         default: "AVAILABLE"
-    },
+    },  
 
     profilePhoto: String
 }, { timestamps: true });

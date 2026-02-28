@@ -11,12 +11,10 @@ const PORT = process.env.PORT;
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors(
-    {
-        origin: process.env.CLIENT_URI,
-        credentials: true
-    }
-))
+app.use(cors({
+    origin: process.env.CLIENT_URI,
+    credentials: true
+}));
 
 
 

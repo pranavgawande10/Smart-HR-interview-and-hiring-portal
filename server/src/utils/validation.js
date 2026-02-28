@@ -11,15 +11,19 @@ const signupValidation = (req) => {
         throw new Error("Enter a valid Email ID!");
     }
 
-    if (!password || !validator.isStrongPassword(password)) {
+    // if (!password || !validator.isStrongPassword(password))
+    if (!password ) {
         throw new Error(
             "Password must be strong (min 8 chars, uppercase, lowercase, number, symbol)"
         );
     }
 
-    
-    if ((role === "HR" || !role) && !companyName) {
-        throw new Error("companyName is required for HR!");
+    if (!role || !["HR", "INTERVIEWER", "CANDIDATE"].includes(role)) {
+        throw new Error("Valid role is required!");
+    }
+
+    if (role === "HR" && !companyName) {
+        throw new Error("Company name is required for HR!");
     }
 };
 

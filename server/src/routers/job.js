@@ -3,18 +3,19 @@ const express = require("express");
 const jobRouter = express.Router();
 const Job = require("../models/job.js");
 const { userAuth } = require("../middlewares/auth.js");
+const authorizeRoles = require("../middlewares/authorize");
 
 
 
-jobRouter.post("/job/create", userAuth, async (req, res) => {
+jobRouter.post("/job/create", userAuth, authorizeRoles("HR"), async (req, res) => {
     try {
-        if (req.user.role !== "HR") {
-            return res.status(403).json({ message: "Only HR can create jobs" });
-        }
+        // if (req.user.role !== "HR") {
+        //     return res.status(403).json({ message: "Only HR can create jobs" });
+        // }
 
-        const { title, description, location, vacancies } = req.body;
+        const { title, description, location, vacancies,skillsrequired } = req.body;
 
-        if (!title || !description || !location || !vacancies) {
+        if (!title || !description || !location || !vacancies || !skillsrequired) {
             throw new Error("All fields are required!");
         }
 
@@ -23,6 +24,7 @@ jobRouter.post("/job/create", userAuth, async (req, res) => {
             description,
             location,
             vacancies,
+            skillsrequired,
             createdBy: req.user._id
         });
 
