@@ -118,4 +118,6 @@ candidateSchema.methods.generateTemporaryToken = function () {
   const tokenExpiry = Date.now() + 20 * 60 * 1000;
   return { unHashedToken, hashedToken, tokenExpiry };
 };
+
+
 export const Candidate = mongoose.model("Candidate", candidateSchema);
