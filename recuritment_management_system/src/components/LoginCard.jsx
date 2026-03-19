@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
-
-const LoginCard = ({ title, role, buttonText }) => {
+import { Link } from "react-router-dom";
+const LoginCard = ({ title, role, buttonText, route }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -10,21 +10,26 @@ const LoginCard = ({ title, role, buttonText }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage("");
-    setLoading(true);
-
+    setLoading(true); 
+    
     try {
-      const res = await axios.post(
-        "http://localhost:3000/api/v1/candidates/login",
-        {
-          email,
-          password,
-          role,
-        }
-      );
+
+      let res;
+      if (role === "Candidate") { 
+        res = await axios.post(
+          "http://localhost:3001/api/v1/candidates/login",
+          { email, password, role }
+        );
+      } else if (role === "Interviewer" || role === "HR Manager") {
+        res = await axios.post(
+          "http://localhost:3000/login",
+          { email, password }
+        );
+      }
 
       setMessage("Login successful ✅");
 
-      if (res.data.token) {
+      if (res?.data?.token) {
         localStorage.setItem("token", res.data.token);
         localStorage.setItem("role", role);
       }
@@ -88,8 +93,8 @@ const LoginCard = ({ title, role, buttonText }) => {
           </p>
         )}
 
-        <p className="text-sm text-center text-gray-500 mt-4">
-          Forgot password?
+        <p className="text-center text-sm text-gray-500 mt-4">
+          <Link to={route} >Forgot password </Link>
         </p>
       </div>
     </div>

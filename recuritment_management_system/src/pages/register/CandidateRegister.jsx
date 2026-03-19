@@ -5,7 +5,7 @@ const CandidateRegister = () => {
   return (
     <RegisterCard
       title="Candidate Registration"
-      role="Student / Candidate"
+      role="Candidate"
       buttonText="Register as Candidate"
       login='/login/candidate'
       fields={[

@@ -42,7 +42,7 @@ const RegisterCard = ({ title, role, buttonText ,login}) => {
       if (profilePhoto) {
         data.append("profilePhoto", profilePhoto);
       }
-
+      
       const res = await axios.post(
         "http://localhost:3000/api/v1/candidates/register",
         data,

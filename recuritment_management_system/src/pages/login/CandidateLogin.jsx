@@ -7,6 +7,7 @@ const CandidateLogin = () => {
       title="Candidate Login"
       role="Student / Candidate"
       buttonText="Login as Candidate"
+      route="/login/candidate/forgot"
     />
   );
 };

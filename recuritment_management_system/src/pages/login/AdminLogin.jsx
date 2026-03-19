@@ -8,6 +8,7 @@ const AdminLogin = () => {
       title="Admin Login"
       role="Admin"
       buttonText="Login as Admin"
+      route="/login/admin/forgot"
     />
     </div>
   )

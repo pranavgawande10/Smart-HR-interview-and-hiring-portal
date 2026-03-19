@@ -7,6 +7,7 @@ const InterviewerLogin = () => {
       title="Interviewer Login"
       role="Interviewer"
       buttonText="Login as Interviewer"
+      route="/login/interviewer/forgot"
     />
   );
 };

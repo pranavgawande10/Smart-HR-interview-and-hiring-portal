@@ -15,6 +15,10 @@ import HelpCenter from "./pages/support/HelpCenter";
 import PrivacyPolicy from "./pages/support/PrivacyPolicy";
 import TermsConditions from "./pages/support/TermsConditions";
 import AdminLogin from "./pages/login/AdminLogin";
+import CandidateForgotPass from "./pages/forgot/CandidateForgotPass";
+import HrForgotPass from "./pages/forgot/HrForgotPass";
+import InterviewerForgotPass from "./pages/forgot/InterviewerForgotPass";
+import AdminForgotPass from "./pages/forgot/AdminForgotPass";
 
 const App = () => {
   return (
@@ -38,6 +42,10 @@ const App = () => {
             <Route path="/support/helpcenter"  element={<HelpCenter/>}/>
             <Route path="/support/privacypolicy"  element={<PrivacyPolicy/>}/>
             <Route path="/support/termscondition"  element={<TermsConditions/>}/>
+            <Route path="/login/candidate/forgot" element={<CandidateForgotPass/>}/>
+            <Route path="/login/hr/forgot" element={<HrForgotPass/>}/>
+            <Route path="/login/interviewer/forgot" element={<InterviewerForgotPass/>}/>
+            <Route path="/login/admin/forgot" element={<AdminForgotPass/>}/>
           </Routes>
         </main>
         

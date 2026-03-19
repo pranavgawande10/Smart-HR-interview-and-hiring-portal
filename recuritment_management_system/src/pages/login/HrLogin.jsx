@@ -7,6 +7,7 @@ const HrLogin = () => {
       title="HR Login"
       role="HR Manager"
       buttonText="Login as HR"
+      route="/login/hr/forgot"
     />
   );
 };
