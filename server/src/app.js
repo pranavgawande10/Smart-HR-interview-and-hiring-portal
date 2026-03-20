@@ -1,11 +1,12 @@
+require("dotenv").config({path: "../.env"});
 const express = require("express");
 const connectDB = require("./config/database.js");
 const app = express();
 const cookieParser = require("cookie-parser");
-const dotenv = require("dotenv");
+// const dotenv = require("dotenv");
 const cors = require("cors");
 
-dotenv.config();
+// dotenv.config();
 const PORT = process.env.PORT;
 
 app.use(cookieParser());

@@ -1,5 +1,8 @@
 import jwt from "jsonwebtoken";
-import { Candidate } from "../models/candidate.model.js";
+
+// const User = require("../../../server/src/models/user");
+// import  User  from "../../../server/src/models/user.cjs";
+import User from "../models/user.cjs";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/api-error.js";
 import { ApiResponse } from "../utils/api-response.js";
@@ -10,23 +13,25 @@ import {
   sendEmail,
   passwordResetMailgenContent,} from "../utils/mail.js";
 import crypto from "crypto";
+import bcrypt from "bcrypt";
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
-    const user = await Candidate.findById(userId);
+    const user = await User.findById(userId);
 
     if (!user) {
       throw new ApiError(400, "User is Not Registered!!!");
     }
 
-    const accessTokens = user.generateAccessToken();
-    const refreshTokens = user.generateRefreshToken();
+    const accessTokens = user.getJWT();
+    // const refreshTokens = user.generateRefreshToken();
 
-    user.refreshToken = refreshTokens;
+    // user.refreshToken = refreshTokens;
 
     await user.save({ validateBeforeSave: false });
-    return { accessTokens, refreshTokens };
+    return {accessTokens};
   } catch (error) {
+       console.log("REAL ERROR:", error); 
     throw new ApiError(
       500,
       "Something went wrong whle generating access and refresh tokens",
@@ -35,13 +40,13 @@ const generateAccessAndRefreshTokens = async (userId) => {
 };
 
 const registerUser = asyncHandler(async (req, res) => {
-  const { email, name, password } = req.body;
+  const { email, name, password , role} = req.body;
 
-  if ([email, name, password].some((field) => !field?.trim())) {
+  if ([email, name, password , role].some((field) => !field?.trim())) {
     throw new ApiError(400, "All fields are required");
   }
 
-  const existedUser = await Candidate.findOne({
+  const existedUser = await User.findOne({
     $or: [{ name }, { email }],
   });
 
@@ -49,51 +54,55 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "User with Name or Email already exists");
   }
 
-  const profilePhotoLocalPath = req.files?.profilePhoto?.[0]?.path;
-  if (!profilePhotoLocalPath) {
-    throw new ApiError(400, "Profile Photo is required");
-  }
+  const passwordHash = await bcrypt.hash(password, 10);
+  // const profilePhotoLocalPath = req.files?.profilePhoto?.[0]?.path;
+  // if (!profilePhotoLocalPath) {
+  //   throw new ApiError(400, "Profile Photo is required");
+  // }
 
-  // Upload to Cloudinary
-  let profilePhoto;
-  try {
-    profilePhoto = await uploadOnCloudinary(profilePhotoLocalPath);
-    if (!profilePhoto?.url) {
-      throw new ApiError(500, "Cloudinary did not return a valid URL");
-    }
-    console.log("Profile Photo uploaded to Cloudinary:", profilePhoto.url);
-  } catch (error) {
-    console.log("Cloudinary upload error:", error);
-    throw new ApiError(500, "Failed to upload Profile Photo");
-  }
+  // // Upload to Cloudinary
+  // let profilePhoto;
+  // try {
+  //   profilePhoto = await uploadOnCloudinary(profilePhotoLocalPath);
+  //   if (!profilePhoto?.url) {
+  //     throw new ApiError(500, "Cloudinary did not return a valid URL");
+  //   }
+  //   console.log("Profile Photo uploaded to Cloudinary:", profilePhoto.url);
+  // } catch (error) {
+  //   console.log("Cloudinary upload error:", error);
+  //   throw new ApiError(500, "Failed to upload Profile Photo");
+  // }
+
+
 
   // Create user
-  const user = await Candidate.create({
+  const user = await User.create({
     email,
     name,
-    password,
-    profilePhoto: profilePhoto.url,
+    password : passwordHash,
+    role,
+    // profilePhoto: profilePhoto.url,
   });
 
-  const { unHashedToken, hashedToken, tokenExpiry } =
-    user.generateTemporaryToken();
+  // const { unHashedToken, hashedToken, tokenExpiry } =
+  //   user.generateTemporaryToken();
 
-  user.emailVerificationToken = hashedToken;
-  user.emailVerificationTokenExpiry = tokenExpiry;
+  // user.emailVerificationToken = hashedToken;
+  // user.emailVerificationTokenExpiry = tokenExpiry;
 
   await user.save({ validateBeforeSave: false });
 
-  await sendEmail({
-    email: user.email,
-    subject: "Please verify your mail",
-    mailgenContent: emailVerificationMailgenContent(
-      user.name,
-      `${req.protocol}://${req.get("host")}/api/v1/candidates/verify-email/${unHashedToken}`,
-    ),
-  });
+  // await sendEmail({
+  //   email: user.email,
+  //   subject: "Please verify your mail",
+  //   mailgenContent: emailVerificationMailgenContent(
+  //     user.name,
+  //     `${req.protocol}://${req.get("host")}/api/v1/candidates/verify-email/${unHashedToken}`,
+  //   ),
+  // });
 
-  const createdUser = await Candidate.findById(user._id).select(
-    "-password -refreshToken -emailVerificationToken -emailVerificationExpiry",
+  const createdUser = await User.findById(user._id).select(
+    "-password",
   );
 
   if (!createdUser) {
@@ -109,134 +118,130 @@ const registerUser = asyncHandler(async (req, res) => {
 });
 
 const loginUser = asyncHandler(async (req, res) => {
+
   const { email, password } = req.body;
 
   if ([email, password].some((field) => !field?.trim())) {
     throw new ApiError(400, "All fields are required");
   }
-  const user = await Candidate.findOne({ email });
+
+  const user = await User.findOne({ email: email.toLowerCase() }).select("+password");
 
   if (!user) {
     throw new ApiError(400, "Invalid email or password");
   }
 
-  const isPasswordValid = await user.comparePassword(password);
+  const isPasswordValid = await user.validatePassword(password);
+
   if (!isPasswordValid) {
     throw new ApiError(400, "Invalid email or password");
   }
+  console.log("JWT SECRET:", process.env.JWT_SECRET);
 
-  const { accessTokens, refreshTokens } = await generateAccessAndRefreshTokens(
-    user._id,
-  );
+  const accessToken = user.getJWT();
 
-  const loggedInUser = await Candidate.findById(user._id).select(
-    "-password -refreshToken",
-  );
-
-  if (!loggedInUser) {
-    throw new ApiError(500, "Unable to login User");
-  }
+  const loggedInUser = await User.findById(user._id).select("-password");
 
   const options = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "Production",
+    secure: process.env.NODE_ENV === "production",
   };
 
   res
     .status(200)
-    .cookie("refreshToken", refreshTokens, options)
-    .cookie("accessToken", accessTokens, options)
+    .cookie("accessToken", accessToken, options)
     .json(
       new ApiResponse(200, {
         message: "User Logged In Successfully",
-        user: { loggedInUser, accessTokens, refreshTokens },
-      }),
+        user: loggedInUser,
+        accessToken
+      })
     );
+
 });
 
 const logoutUser = asyncHandler(async (req, res) => {
-  await Candidate.findByIdAndUpdate(
-    req.candidate._id,
+
+  await User.findByIdAndUpdate(
+    req.user._id,
     {
       $set: {
-        refreshToken: undefined,
+        refreshToken: null,
       },
-    },
-    {
-      new: true,
-    },
+    }
   );
 
   const options = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "Production",
+    secure: process.env.NODE_ENV === "production",
   };
 
   res
     .status(200)
-    .cookie("accessToken", options)
-    .cookie("refreshToken", options)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
     .json(new ApiResponse(200, "User Logged Out Successfully"));
+
 });
 
-const forgotPassword = asyncHandler(async (req, res) => {
-  const { email } = req.body;
-  if ([email].some((field) => !field?.trim())) {
-    throw new ApiError(400, "Email feild is required");
-  }
+// const forgotPassword = asyncHandler(async (req, res) => {
+//   const { email } = req.body;
+//   if ([email].some((field) => !field?.trim())) {
+//     throw new ApiError(400, "Email feild is required");
+//   }
 
-  const user = await Candidate.findOne({ email });
+//   const user = await User.findOne({ email });
 
-  if (!user) {
-    throw new ApiError(400, "User of this Email is not registered yet");
-  }
+//   if (!user) {
+//     throw new ApiError(400, "User of this Email is not registered yet");
+//   }
 
-  const { unHashedToken, hashedToken, tokenExpiry } =
-    user.generateTemporaryToken();
+//   const { unHashedToken, hashedToken, tokenExpiry } =
+//     user.generateTemporaryToken();
 
-  user.forgotPasswordToken = hashedToken;
-  user.forgotPasswordTokenExpiry = tokenExpiry;
+//   user.forgotPasswordToken = hashedToken;
+//   user.forgotPasswordTokenExpiry = tokenExpiry;
 
-  await user.save({ validateBeforeSave: false });
+//   await user.save({ validateBeforeSave: false });
 
-  const resetUrl = `${req.protocol}://${req.get("host")}/api/v1/candidates/reset-password/${unHashedToken}`;
+//   const resetUrl = `${req.protocol}://${req.get("host")}/api/v1/candidates/reset-password/${unHashedToken}`;
 
-  await sendEmail({
-    email: user.email,
-    subject: "Please Reset your Password",
-    mailgenContent: passwordResetMailgenContent(user.name, resetUrl),
-  });
+//   await sendEmail({
+//     email: user.email,
+//     subject: "Please Reset your Password",
+//     mailgenContent: passwordResetMailgenContent(user.name, resetUrl),
+//   });
 
-  return res.send(200).json(200, "Reset Email sent Successfully");
-});
+//   return res.send(200).json(200, "Reset Email sent Successfully");
+// });
 
-const updatePassword = asyncHandler(async (req, res) => {
-  const { token } = req.params;
-  const { newPassword } = req.body;
+// const updatePassword = asyncHandler(async (req, res) => {
+//   const { token } = req.params;
+//   const { newPassword } = req.body;
 
-  if ([newPassword].some((field) => !field?.trim())) {
-    throw new ApiError(400, "Password fields are required");
-  }
+//   if ([newPassword].some((field) => !field?.trim())) {
+//     throw new ApiError(400, "Password fields are required");
+//   }
 
-  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+//   const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
-  const user = await Candidate.findOne({
-    forgotPasswordToken: hashedToken,
-    forgotPasswordTokenExpiry: { $gt: Date.now() },
-  });
+//   const user = await User.findOne({
+//     forgotPasswordToken: hashedToken,
+//     forgotPasswordTokenExpiry: { $gt: Date.now() },
+//   });
 
-  if (!user) {
-    throw new ApiError(400, "Invalid reset password Link");
-  }
+//   if (!user) {
+//     throw new ApiError(400, "Invalid reset password Link");
+//   }
 
-  user.password = newPassword;
-  user.forgotPasswordToken = undefined;
-  user.forgotPasswordTokenExpiry = undefined;
+//   user.password = newPassword;
+//   user.forgotPasswordToken = undefined;
+//   user.forgotPasswordTokenExpiry = undefined;
 
-  await user.save({ validateBeforeSave: false });
+//   await user.save({ validateBeforeSave: false });
 
-  return res.status(200).json(new ApiResponse(200, "Password Updated Successfully"));
-});
+//   return res.status(200).json(new ApiResponse(200, "Password Updated Successfully"));
+// });
 
 const updateProfilePhoto = asyncHandler(async (req, res) => {
   const profilePhotoLocalPath = req.file?.path;
@@ -250,7 +255,7 @@ const updateProfilePhoto = asyncHandler(async (req, res) => {
     throw new ApiError(500, "Cloudinary did not return a valid URL");
   }
 
-  const user = await Candidate.findByIdAndUpdate(
+  const user = await User.findByIdAndUpdate(
     req.candidate?._id,
     {
       $set: {
@@ -270,32 +275,80 @@ const updateProfilePhoto = asyncHandler(async (req, res) => {
   );
 });
 
-const verifyEmail = asyncHandler(async (req, res) => {
-  const { verificationToken } = req.params;
+// const verifyEmail = asyncHandler(async (req, res) => {
+//   const { verificationToken } = req.params;
 
-  let hashedToken = crypto
-    .createHash("sha256")
-    .update(verificationToken)
-    .digest("hex");
-  console.log("Received Token:", verificationToken);
-  console.log("Hashed Version:", hashedToken);
+//   let hashedToken = crypto
+//     .createHash("sha256")
+//     .update(verificationToken)
+//     .digest("hex");
+//   console.log("Received Token:", verificationToken);
+//   console.log("Hashed Version:", hashedToken);
 
-  const user = await Candidate.findOne({
-    emailVerificationToken: hashedToken,
-    emailVerificationTokenExpiry: { $gt: Date.now() },
-  });
+//   const user = await User.findOne({
+//     emailVerificationToken: hashedToken,
+//     emailVerificationTokenExpiry: { $gt: Date.now() },
+//   });
 
-  if (!user) {
-    return res.status(400).send("Invalid or expired verification link");
+//   if (!user) {
+//     return res.status(400).send("Invalid or expired verification link");
+//   }
+
+//   user.isEmailVerified = true;
+//   user.emailVerificationToken = undefined;
+//   user.emailVerificationExpiry = undefined;
+
+//   await user.save({ validateBeforeSave: false });
+
+//   return res.send("<h3>Email verified successfully ✅</h3>");
+// });
+
+
+const changePassword = asyncHandler(async (req, res) => {
+  const { email, oldPassword, newPassword } = req.body;
+  if (!email || !oldPassword || !newPassword) {
+    throw new ApiError(400, "feilds is required");
   }
 
-  user.isEmailVerified = true;
-  user.emailVerificationToken = undefined;
-  user.emailVerificationExpiry = undefined;
+  const user = await User.findOne({ email });
 
+  if (!user) {
+    throw new ApiError(400, "User with this email does not exist");
+  }
+  const isPasswordValid = await user.validatePassword(oldPassword);
+
+  if (!isPasswordValid) {
+    throw new ApiError(400, "Old password is incorrect");
+  }
+
+  const newHashedPassword = await bcrypt.hash(newPassword, 10);
+  user.password = newHashedPassword;
   await user.save({ validateBeforeSave: false });
 
-  return res.send("<h3>Email verified successfully ✅</h3>");
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        null,
+        "Password reset successfully. You can now log in with your new password.",
+      ),
+    );
+}); 
+
+const getCurrentUser = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id).select(
+    "-password",
+  );
+
+  const data = {
+    name: user.name,
+    email: user.email,
+  };
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, data, "Current User Fetched Successfully"));
 });
 
 export {
@@ -303,10 +356,9 @@ export {
   generateAccessAndRefreshTokens,
   loginUser,
   logoutUser,
-  updatePassword,
+  getCurrentUser,
+  changePassword,
   updateProfilePhoto,
-  verifyEmail,
-  forgotPassword
 };
 
 

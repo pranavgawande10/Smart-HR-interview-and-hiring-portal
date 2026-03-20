@@ -1,4 +1,5 @@
-import { Candidate } from "../models/candidate.model.js";
+// import { Candidate } from "../models/candidate.model.js";
+import User from "../models/user.cjs";
 import jwt from "jsonwebtoken";
 
 import { ApiError } from "../utils/api-error.js";
@@ -16,10 +17,10 @@ export const verifyJWT = asyncHandler(async (req, _, next) => {
     );
   }
   try {
-    const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
 
-    const candidate = await Candidate.findById(decodedToken?._id).select(
-      "-password -refreshToken"
+    const candidate = await User.findById(decodedToken?._id).select(
+      "-password "
     );
 
     if (!candidate) {
@@ -29,7 +30,7 @@ export const verifyJWT = asyncHandler(async (req, _, next) => {
       );
     }
 
-    req.candidate = candidate;
+    req.user = candidate;
     next();
   } catch (error) {
     throw new ApiError(error?.message || "Invalid access Token", 401);
