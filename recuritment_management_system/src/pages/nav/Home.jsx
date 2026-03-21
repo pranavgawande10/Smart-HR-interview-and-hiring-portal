@@ -21,72 +21,107 @@ const Home = () => {
       </section>
 
       {/* Roles Section */}
-      <section className="py-16 bg-gray-100">
-        <div className="max-w-7xl mx-auto px-6">
-          <h2 className="text-3xl font-bold text-center mb-12">
-            User Roles
-          </h2>
+      <section className="py-20 bg-gradient-to-b from-gray-100 to-white">
+  <div className="max-w-7xl mx-auto px-6">
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            <RoleCard
-              title="Admin"
-              description="Manage users, roles, and system settings"
-              login="/login/admin"
-            />
-            <RoleCard
-              title="HR"
-              description="Post jobs, shortlist candidates, schedule interviews"
-              login="/login/hr"
-            />
-            <RoleCard
-              title="Interviewer"
-              description="Evaluate candidates and provide feedback"
-              login="/login/interviewer"
-            />
-            <RoleCard
-              title="Candidate"
-              description="Apply for jobs and track application status"
-              login="/login/candidate"
-            />
+    {/* Heading */}
+    <h2 className="text-4xl font-bold text-center mb-14 text-gray-800">
+      User Roles
+    </h2>
+
+    {/* Cards */}
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+
+      {[
+        {
+          title: "Admin",
+          desc: "Manage users, roles, and system settings",
+          login: "/login/admin",
+        },
+        {
+          title: "HR",
+          desc: "Post jobs, shortlist candidates, schedule interviews",
+          login: "/login/hr",
+        },
+        {
+          title: "Interviewer",
+          desc: "Evaluate candidates and Take Interview",
+          login: "/login/interviewer",
+        },
+        {
+          title: "Candidate",
+          desc: "Apply for jobs and track application status",
+          login: "/login/candidate",
+        },
+      ].map((role, i) => (
+
+        <Link
+          to={role.login}
+          key={i}
+          className="block bg-white rounded-2xl p-6 shadow-md border border-gray-200 
+                     hover:shadow-2xl hover:-translate-y-2 hover:border-blue-400 
+                     transition duration-300 group cursor-pointer"
+        >
+
+          {/* Icon */}
+          <div className="text-4xl mb-4 group-hover:scale-110 transition">
+            {role.icon}
           </div>
-        </div>
-      </section>
+
+          {/* Title */}
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">
+            {role.title}
+          </h3>
+
+          {/* Description */}
+          <p className="text-gray-500 text-sm">
+            {role.desc}
+          </p>
+
+        </Link>
+
+      ))}
+
+    </div>
+  </div>
+</section>
 
       {/* Stats Section */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-          <div>
-            <h3 className="text-3xl font-bold text-blue-600">120+</h3>
-            <p className="text-gray-600">Jobs Posted</p>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 px-6 py-12 bg-gray-50">
+
+        {[
+          { num: "120+", label: "Jobs Posted" },
+          { num: "500+", label: "Candidates" },
+          { num: "80+", label: "Companies" },
+          { num: "95%", label: "Hiring Success" },
+        ].map((item, i) => (
+          <div
+            key={i}
+            className="bg-white rounded-xl shadow-md p-6 text-center hover:shadow-xl hover:-translate-y-1 transition duration-300"
+          >
+            <h2 className="text-3xl font-bold text-blue-600">{item.num}</h2>
+            <p className="text-gray-500 mt-2">{item.label}</p>
           </div>
-          <div>
-            <h3 className="text-3xl font-bold text-blue-600">500+</h3>
-            <p className="text-gray-600">Candidates</p>
-          </div>
-          <div>
-            <h3 className="text-3xl font-bold text-blue-600">80+</h3>
-            <p className="text-gray-600">Companies</p>
-          </div>
-          <div>
-            <h3 className="text-3xl font-bold text-blue-600">95%</h3>
-            <p className="text-gray-600">Hiring Success</p>
-          </div>
-        </div>
-      </section>
+        ))}
+
+      </div>
 
       {/* Call To Action */}
-      <section className="py-16 bg-blue-600 text-white text-center">
-        <h2 className="text-3xl font-bold mb-4">
+      <div className="bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 text-white py-16 text-center">
+
+        <h1 className="text-3xl md:text-4xl font-bold mb-4">
           Start Hiring Smarter Today
-        </h2>
-        <p className="mb-6">
+        </h1>
+
+        <p className="text-lg text-blue-100 mb-8">
           Simplify your recruitment process with our system
         </p>
-        <button className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100">
+
+        <button className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold shadow-lg hover:scale-105 hover:bg-gray-100 transition duration-300">
           Register Now
         </button>
-      </section>
 
+      </div>
     </div>
   );
 };

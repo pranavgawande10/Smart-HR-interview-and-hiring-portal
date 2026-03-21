@@ -5,7 +5,8 @@ const HrLogin = () => {
   return (
     <LoginCard
       title="HR Login"
-      role="HR Manager"
+      ROLE = "HR"
+      role="HR"
       buttonText="Login as HR"
       route="/login/hr/forgot"
     />

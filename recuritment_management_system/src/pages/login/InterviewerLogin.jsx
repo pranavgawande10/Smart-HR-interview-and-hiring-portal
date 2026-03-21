@@ -5,7 +5,8 @@ const InterviewerLogin = () => {
   return (
     <LoginCard
       title="Interviewer Login"
-      role="Interviewer"
+      role="INTERVIEWER"
+      ROEL = "Interviewer"
       buttonText="Login as Interviewer"
       route="/login/interviewer/forgot"
     />
