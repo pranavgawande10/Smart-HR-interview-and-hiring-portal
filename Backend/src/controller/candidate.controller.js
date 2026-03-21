@@ -118,8 +118,7 @@ const registerUser = asyncHandler(async (req, res) => {
 });
 
 const loginUser = asyncHandler(async (req, res) => {
-
-  const { email, password } = req.body;
+  const { email, password, role } = req.body;
 
   if ([email, password].some((field) => !field?.trim())) {
     throw new ApiError(400, "All fields are required");
@@ -131,12 +130,15 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid email or password");
   }
 
+  if (role && user.role !== role) {
+    throw new ApiError(403, "Access denied for this role");
+  }
+
   const isPasswordValid = await user.validatePassword(password);
 
   if (!isPasswordValid) {
     throw new ApiError(400, "Invalid email or password");
   }
-  console.log("JWT SECRET:", process.env.JWT_SECRET);
 
   const accessToken = user.getJWT();
 
@@ -154,10 +156,10 @@ const loginUser = asyncHandler(async (req, res) => {
       new ApiResponse(200, {
         message: "User Logged In Successfully",
         user: loggedInUser,
-        accessToken
+        role: user.role,
+        accessToken,
       })
     );
-
 });
 
 const logoutUser = asyncHandler(async (req, res) => {
