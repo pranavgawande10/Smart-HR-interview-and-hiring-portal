@@ -33,15 +33,17 @@ authRouter.post("/signup" , async (req,res)=>{
 
         //create a new instance of user model
         const user = new User({
-    name,
-    email,
-    password: passwordHash,
-    role: role || "HR", 
-    companyName: role === "HR" ? companyName : undefined,
-    skills: role === "INTERVIEWER" ? skills : undefined,
-    experienceYears: role === "INTERVIEWER" ? experienceYears : undefined
-});
 
+
+            name,
+            email,
+            password: passwordHash,
+            role: role || "HR",
+            companyName: role === "HR" ? companyName : undefined,
+            skills: role === "INTERVIEWER" ? skills : undefined,
+            experienceYears: role === "INTERVIEWER" ? experienceYears : undefined
+        });
+ 
         const data = req.body;
         await user.save();
         res.send("user data saved successfully!");
@@ -55,11 +57,13 @@ authRouter.post("/signup" , async (req,res)=>{
 
 authRouter.post("/login", async (req, res) => {
     try {
+
         const { email, password, role } = req.body;
 
         if (!email || !password || !role) {
             return res.status(400).json({ message: "All fields are required!" });
         }
+
 
         if (!validator.isEmail(email)) {
             return res.status(400).json({ message: "Invalid email format" });
@@ -86,7 +90,7 @@ authRouter.post("/login", async (req, res) => {
 
         res.cookie("token", token, {
             httpOnly: true,
-            secure: false, 
+            secure: false,
             maxAge: 60 * 60 * 1000
         });
 
