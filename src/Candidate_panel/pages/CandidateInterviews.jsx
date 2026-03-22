@@ -4,7 +4,7 @@ const CandidateInterviews = () => {
       <h1 style={{ fontSize: "28px", fontWeight: "700", color: "#0f172a", marginBottom: "8px" }}>
         My Interviews
       </h1>
-      <p style={{ fontSize: "16px", color: "#64748b", marginBottom: "30px" }}>
+      <p >
         View and manage your scheduled interviews
       </p>
       
