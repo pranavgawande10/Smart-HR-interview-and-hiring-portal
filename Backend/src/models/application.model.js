@@ -29,18 +29,19 @@ const applicationSchema = new mongoose.Schema(
       required: true,
     },
 
-    coverLetter: {
-      type: String,
-    },
+    coverLetter: String,
 
     resume: {
-      type: String, // URL of uploaded resume
+      type: String,
       required: true,
     },
 
+    // ❌ REMOVE THIS (not needed anymore)
+    // assignedInterviewer
+
     status: {
       type: String,
-      enum: ["applied", "shortlisted", "rejected", "interview"],
+      enum: ["applied", "shortlisted", "interview", "rejected", "selected"],
       default: "applied",
     },
   },

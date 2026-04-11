@@ -14,6 +14,7 @@ import {
   passwordResetMailgenContent,} from "../utils/mail.js";
 import crypto from "crypto";
 import bcrypt from "bcrypt";
+import Interview from "../models/interview.model.js";
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -361,6 +362,68 @@ export {
   getCurrentUser,
   changePassword,
   updateProfilePhoto,
+};
+
+
+
+export const respondToInterview = async (req, res) => {
+  try {
+    const { interviewId } = req.params;
+    const { response, reason } = req.body;
+
+    const interview = await Interview.findById(interviewId);
+
+    if (!interview) {
+      return res.status(404).json({
+        message: "Interview not found"
+      });
+    }
+
+    // 🔐 Only candidate can respond
+    if (interview.candidate.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        message: "Unauthorized"
+      });
+    }
+
+    // ❌ Cannot respond after completion
+    if (interview.status === "COMPLETED") {
+      return res.status(400).json({
+        message: "Interview already completed"
+      });
+    }
+
+    // ✅ Handle responses
+    if (response === "ACCEPTED") {
+      interview.candidateResponse = "ACCEPTED";
+    }
+
+    else if (response === "REJECTED") {
+      interview.candidateResponse = "REJECTED";
+      interview.status = "CANCELLED"; // 🔥 cancel interview
+    }
+
+    else if (response === "REQUEST_RESCHEDULE") {
+      interview.candidateResponse = "REQUEST_RESCHEDULE";
+      interview.rescheduleReason = reason || "";
+    }
+
+    else {
+      return res.status(400).json({
+        message: "Invalid response"
+      });
+    }
+
+    await interview.save();
+
+    return res.status(200).json({
+      message: "Response submitted",
+      interview
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };
 
 
