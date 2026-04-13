@@ -193,6 +193,7 @@ const Card = (props) => {
       </div>
 
       {/* VIEW DETAILS LINK */}
+<<<<<<< HEAD:src/HR_panel/components/Card.jsx
       {!props.isExpired && (
         <div style={{ textAlign: "center" }}>
           <Link 
@@ -215,6 +216,28 @@ const Card = (props) => {
           </Link>
         </div>
       )}
+=======
+      <div style={{ textAlign: "center" }}>
+        <Link 
+          to={`/hr/job/${jobId}`}
+          style={{
+            fontSize: "13px",
+            color: "rgb(20, 184, 166)",
+            textDecoration: "none",
+            fontWeight: "500",
+            transition: "all 0.3s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.textDecoration = "underline";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.textDecoration = "none";
+          }}
+        >
+          for more details →
+        </Link>
+      </div>
+>>>>>>> e76d803 (Changed UI):recuritment_management_system/src/HR_panel/components/Card.jsx
     </div>
   )
 }

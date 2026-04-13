@@ -190,7 +190,7 @@ const Card = (props) => {
         {/* VIEW DETAILS LINK */}
         <div style={{ textAlign: "center" }}>
           <Link 
-            to={`/job/${jobId}`}
+          to={`/candidate/job/${jobId}`}
             style={{
               fontSize: "13px",
               color: "rgb(20, 184, 166)",

@@ -10,7 +10,7 @@ const Footer = () => {
         {/* Brand */}
         <div>
           <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 text-transparent bg-clip-text">
-            MyApp
+            SMART-HR
           </h2>
           <p className="mt-3 text-sm text-gray-400 leading-relaxed">
             Building modern web experiences with React & Tailwind CSS.
@@ -54,7 +54,7 @@ const Footer = () => {
       {/* Bottom Bar */}
       <div className="border-t border-gray-700 text-center py-4 text-sm text-gray-400">
         © {new Date().getFullYear()}{" "}
-        <span className="text-white font-medium">MyApp</span>. All rights reserved.
+        <span className="text-white font-medium">SMART-HR</span>. All rights reserved.
       </div>
 
     </footer>

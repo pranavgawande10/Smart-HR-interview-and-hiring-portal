@@ -1,27 +1,43 @@
-import { NavLink } from "react-router-dom";
-import { 
-  LayoutDashboard, 
-  Briefcase, 
-  Users, 
-  Calendar, 
-  UserCircle
+import { NavLink, useNavigate } from "react-router-dom";
+import {
+  LayoutDashboard,
+  Briefcase,
+  Users,
+  Calendar,
+  UserCircle,
+  LogOut,
 } from "lucide-react";
 
-const Sidebar = () => {
+const NAVBAR_OFFSET_PX = 0;
+
+const Sidebar = ({ isMobile = false, mobileOpen = false, onMobileRequestClose }) => {
+  const navigate = useNavigate();
+  const userName = localStorage.getItem("userName") || "HR Manager";
+  const userRole = localStorage.getItem("role") || "HR";
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("userName");
+    navigate("/");
+  };
+
   // Sidebar container style
   const sidebarStyle = {
     width: "280px",
-    height: "100vh",
+    height: `calc(100vh - ${NAVBAR_OFFSET_PX}px)`,
     background: "linear-gradient(180deg, #0f172a 0%, #1e293b 100%)",
     color: "white",
     padding: "25px 20px",
     position: "fixed",
     left: "0",
-    top: "0",
+    top: `${NAVBAR_OFFSET_PX}px`,
     overflow: "hidden",
     zIndex: "1000",
     boxShadow: "4px 0 20px rgba(0, 0, 0, 0.15)",
     borderRight: "1px solid rgba(255, 255, 255, 0.1)",
+    transform: isMobile ? (mobileOpen ? "translateX(0)" : "translateX(-105%)") : "translateX(0)",
+    transition: "transform 0.25s ease",
   };
 
   // Brand/logo section
@@ -46,11 +62,11 @@ const Sidebar = () => {
 
   // Menu items with Lucide React icons
   const menuItems = [
-    { path: "/", label: "Dashboard", icon: <LayoutDashboard size={22} /> },
-    { path: "/jobs", label: "Job Postings", icon: <Briefcase size={22} /> },
-    { path: "/applicants", label: "Applicants", icon: <Users size={22} /> },
-    { path: "/interviews", label: "Interviews", icon: <Calendar size={22} /> },
-    { path: "/profile", label: "Profile", icon: <UserCircle size={22} /> },
+    { path: "/hr", label: "Dashboard", icon: <LayoutDashboard size={22} /> },
+    { path: "/hr/jobs", label: "Job Postings", icon: <Briefcase size={22} /> },
+    { path: "/hr/applicants", label: "Applicants", icon: <Users size={22} /> },
+    { path: "/hr/interviews", label: "Interviews", icon: <Calendar size={22} /> },
+    { path: "/hr/profile", label: "Profile", icon: <UserCircle size={22} /> },
   ];
 
   // Link base style
@@ -121,7 +137,10 @@ const Sidebar = () => {
             style={({ isActive }) => getLinkStyle(isActive)}
             onMouseEnter={(e) => handleMouseEnter(e, false)}
             onMouseLeave={(e) => handleMouseLeave(e, false)}
-            end
+            end={item.path === "/hr"}
+            onClick={() => {
+              if (isMobile && onMobileRequestClose) onMobileRequestClose();
+            }}
           >
             <div style={{ 
               color: "inherit",
@@ -146,32 +165,24 @@ const Sidebar = () => {
         border: "1px solid rgba(255, 255, 255, 0.1)",
         display: "flex",
         alignItems: "center",
+        justifyContent: "space-between",
         gap: "12px",
       }}>
-        <div style={{
-          width: "40px",
-          height: "40px",
-          borderRadius: "50%",
-          background: "linear-gradient(135deg,  #14b8a6 0%, #0ea5e9 100%)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontWeight: "600",
-          color: "white",
-          fontSize: "16px",
-        }}>
-          AJ
-        </div>
-        <div style={{ flex: "1", minWidth: "0" }}>
-          <p style={{ 
-            margin: "0", 
-            fontWeight: "600", 
-            fontSize: "14px",
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: "0" }}>
+          <div style={{
+            width: "40px",
+            height: "40px",
+            borderRadius: "50%",
+            background: "linear-gradient(135deg,  #14b8a6 0%, #0ea5e9 100%)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontWeight: "600",
             color: "white",
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
+            fontSize: "16px",
+            flexShrink: 0,
           }}>
+<<<<<<< HEAD:src/HR_panel/components/sidebar.jsx
             Anushka Jannawar
           </p>
           <p style={{ 
@@ -184,7 +195,44 @@ const Sidebar = () => {
           }}>
            Senior HR Manager
           </p>
+=======
+            {userName.charAt(0).toUpperCase()}
+          </div>
+          <div style={{ flex: "1", minWidth: "0" }}>
+            <p style={{ 
+              margin: "0", 
+              fontWeight: "600", 
+              fontSize: "14px",
+              color: "white",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}>
+              {userName}
+            </p>
+            <p style={{ 
+              margin: "2px 0 0 0", 
+              fontSize: "12px", 
+              color: "#94a3b8",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}>
+              {userRole}
+            </p>
+          </div>
+>>>>>>> e76d803 (Changed UI):recuritment_management_system/src/HR_panel/components/Sidebar.jsx
         </div>
+        <button onClick={handleLogout} style={{
+          background: "transparent",
+          border: "none",
+          color: "#f87171",
+          cursor: "pointer",
+          padding: "5px",
+          display: "flex", // Keep display flex for alignment
+        }} title="Logout">
+          <LogOut size={20} />
+        </button>
       </div>
     </div>
   );

@@ -1,7 +1,32 @@
 // Profile.jsx
 import { useState, useEffect } from "react";
+<<<<<<< HEAD:src/HR_panel/pages/Profile.jsx
 import { 
   User, Mail,Phone,Building,MapPin,Calendar,Edit2,Save,X,Camera,Briefcase,Globe,Shield,Bell,Lock,LogOut,CheckCircle,AlertCircle
+=======
+import {
+  User,
+  Mail,
+  Phone,
+  Building,
+  MapPin,
+  Calendar,
+  Edit2,
+  Save,
+  X,
+  Camera,
+  Briefcase,
+  Globe,
+  Linkedin,
+  Twitter,
+  Github,
+  Shield,
+  Bell,
+  Lock,
+  LogOut,
+  CheckCircle,
+  AlertCircle
+>>>>>>> e76d803 (Changed UI):recuritment_management_system/src/HR_panel/pages/Profile.jsx
 } from "lucide-react";
 import PageHeader from "../components/PageHeader";
 
@@ -115,7 +140,7 @@ const Profile = () => {
 
   return (
     <div style={{ padding: "24px", maxWidth: "1200px", margin: "0 auto" }}>
-      
+
       {/* Header */}
       <PageHeader
         title="HR Profile"
@@ -144,7 +169,7 @@ const Profile = () => {
       )}
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "24px" }}>
-        
+
         {/* Left Column - Profile Card */}
         <div style={{ position: "sticky", top: "24px" }}>
           <div style={{
@@ -635,13 +660,13 @@ const Profile = () => {
             padding: "24px"
           }} onClick={(e) => e.stopPropagation()}>
             <h2 style={{ fontSize: "20px", fontWeight: "bold", marginBottom: "20px" }}>Change Password</h2>
-            
+
             <div style={{ marginBottom: "16px" }}>
               <label style={{ display: "block", fontSize: "13px", fontWeight: "500", marginBottom: "4px" }}>Current Password</label>
               <input
                 type="password"
                 value={passwordData.currentPassword}
-                onChange={(e) => setPasswordData({...passwordData, currentPassword: e.target.value})}
+                onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
                 style={{ width: "100%", padding: "10px", border: "1px solid #e2e8f0", borderRadius: "8px" }}
               />
               {passwordErrors.currentPassword && (
@@ -654,7 +679,7 @@ const Profile = () => {
               <input
                 type="password"
                 value={passwordData.newPassword}
-                onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})}
+                onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
                 style={{ width: "100%", padding: "10px", border: "1px solid #e2e8f0", borderRadius: "8px" }}
               />
               {passwordErrors.newPassword && (
@@ -667,7 +692,7 @@ const Profile = () => {
               <input
                 type="password"
                 value={passwordData.confirmPassword}
-                onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
+                onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
                 style={{ width: "100%", padding: "10px", border: "1px solid #e2e8f0", borderRadius: "8px" }}
               />
               {passwordErrors.confirmPassword && (

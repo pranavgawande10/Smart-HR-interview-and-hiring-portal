@@ -115,7 +115,7 @@ const JobDetails = () => {
     return (
       <div style={{ padding: "40px", textAlign: "center" }}>
         <h2>Job not found</h2>
-        <Link to="/jobs" style={{ color: "#0369a1" }}>Back to Jobs</Link>
+        <Link to="/hr/jobs" style={{ color: "#0369a1" }}>Back to Jobs</Link>
       </div>
     );
   }
@@ -125,7 +125,7 @@ const JobDetails = () => {
       
       {/* Back Button */}
       <Link 
-        to="/jobs"
+        to="/hr/jobs"
         style={{
           display: "inline-flex",
           alignItems: "center",

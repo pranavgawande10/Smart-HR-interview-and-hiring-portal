@@ -19,9 +19,9 @@ const Footer = () => {
           <h3 className="footer-heading">Quick Links</h3>
           <div className="footer-links">
             <Link className="footer-link" to='/'>Home</Link>
-            <Link className="footer-link" to='/dashboard'>Dashboard</Link>
-            <Link className="footer-link" to='/jobs'>Job Postings</Link>
-            <Link className="footer-link" to='/applicants'>Applicants</Link>
+            <Link className="footer-link" to='/hr'>Dashboard</Link>
+            <Link className="footer-link" to='/hr/jobs'>Job Postings</Link>
+            <Link className="footer-link" to='/hr/applicants'>Applicants</Link>
           </div>
         </div>
 
