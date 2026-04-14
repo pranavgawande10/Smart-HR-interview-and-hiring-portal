@@ -1,3 +1,4 @@
+
 .footer {
   background-color: #1a1a1a;
   color: #e0e0e0;
@@ -79,7 +80,7 @@
   color: #888;
 }
 
-/* Responsive */
+
 @media (max-width: 900px) {
   .footer-content {
     grid-template-columns: repeat(2, 1fr);
@@ -96,3 +97,4 @@
     justify-content: center;
   }
 }
+  

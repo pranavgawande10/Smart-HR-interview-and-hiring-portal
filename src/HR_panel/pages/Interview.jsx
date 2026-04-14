@@ -1,515 +1,332 @@
-// Interview.jsx
 import { useState, useEffect } from "react";
 import { 
-  Calendar, 
-  Clock, 
-  Video, 
-  Phone, 
-  MapPin, 
-  Users, 
-  ChevronRight,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  Plus,
-  Search,
-  Filter,
-  Download
+  Calendar, Clock, Users, CheckCircle, XCircle, Video, List, User, 
+  ChevronRight, TrendingUp, ChevronDown, FileText, Star, Award
 } from "lucide-react";
-import PageHeader from "../components/PageHeader";
 
 const Interview = () => {
   const [interviews, setInterviews] = useState([]);
-  const [showScheduleForm, setShowScheduleForm] = useState(false);
   const [selectedInterview, setSelectedInterview] = useState(null);
-  const [search, setSearch] = useState("");
-  const [filterType, setFilterType] = useState("all");
-  const [filterDate, setFilterDate] = useState("");
 
-  // Load interviews from localStorage
   useEffect(() => {
-    const savedInterviews = localStorage.getItem("hrInterviews");
-    if (savedInterviews) {
-      setInterviews(JSON.parse(savedInterviews));
-    } else {
-      // Sample interview data
-      const sampleInterviews = [
+    const saved = JSON.parse(localStorage.getItem("hrInterviews") || "[]");
+    
+    // Fallback dummy data if no interviews exist
+    if (saved.length === 0) {
+      const dummyData = [
         {
           id: 1,
           candidateName: "Sarah Johnson",
-          candidateEmail: "sarah.johnson@email.com",
-          candidatePhone: "+91 98765 43210",
           position: "Frontend Developer",
-          date: "2024-03-25",
+          date: "Oct 25, 2024",
           time: "10:00 AM",
-          duration: "60",
-          type: "video",
-          link: "https://meet.google.com/abc-defg-hij",
-          status: "scheduled",
-          interviewers: ["John Doe (Tech Lead)", "Jane Smith (HR)"],
-          notes: "Candidate has strong React experience"
+          interviewers: ["John Doe (Tech Lead)"],
+          roundName: "Technical Round",
+          status: "Scheduled",
+          link: "https://meet.google.com/abc-defg-hij"
         },
         {
           id: 2,
-          candidateName: "Michael Chen",
-          candidateEmail: "michael.chen@email.com",
-          candidatePhone: "+91 87654 32109",
-          position: "Backend Developer",
-          date: "2024-03-25",
-          time: "2:00 PM",
-          duration: "45",
-          type: "inperson",
-          location: "Conference Room A, 3rd Floor",
-          status: "scheduled",
-          interviewers: ["Robert Brown (Tech Lead)", "Sarah Wilson (HR)"],
-          notes: "Focus on system design"
+          candidateName: "Priya Sharma",
+          position: "Product Manager",
+          date: "Oct 18, 2024",
+          time: "11:30 AM",
+          interviewers: ["Sarah Wilson"],
+          roundName: "Final Round",
+          status: "Completed",
+          submittedFeedback: {
+            rating: 5,
+            technicalSkills: "Excellent product sense and architecture design.",
+            communicationSkills: "Very clear articulation of past experiences.",
+            overallFeedback: "Strong candidate, fits the role perfectly.",
+            result: "Selected"
+          }
         },
         {
           id: 3,
-          candidateName: "Priya Sharma",
-          candidateEmail: "priya.sharma@email.com",
-          candidatePhone: "+91 76543 21098",
-          position: "UI/UX Designer",
-          date: "2024-03-26",
-          time: "11:30 AM",
-          duration: "60",
-          type: "phone",
-          phoneNumber: "+91 98765 43210",
-          status: "scheduled",
-          interviewers: ["Emily Davis (Design Lead)"],
-          notes: "Portfolio review"
-        },
-        {
-          id: 4,
-          candidateName: "Alex Thompson",
-          candidateEmail: "alex.thompson@email.com",
-          candidatePhone: "+91 65432 10987",
-          position: "DevOps Engineer",
-          date: "2024-03-24",
-          time: "3:00 PM",
-          duration: "90",
-          type: "video",
-          link: "https://meet.google.com/xyz-abcd-efg",
-          status: "completed",
-          interviewers: ["David Miller (DevOps Lead)"],
-          notes: "Technical assessment completed",
-          feedback: "Strong candidate, moving to next round"
-        },
-        {
-          id: 5,
-          candidateName: "Ananya Reddy",
-          candidateEmail: "ananya.reddy@email.com",
-          candidatePhone: "+91 54321 09876",
-          position: "Product Manager",
-          date: "2024-03-23",
-          time: "12:00 PM",
-          duration: "60",
-          type: "video",
-          link: "https://meet.google.com/ijk-lmno-pqr",
-          status: "cancelled",
-          interviewers: ["Mark Taylor (Product Head)"],
-          notes: "Candidate rescheduled",
-          cancelReason: "Technical issues on candidate's side"
+          candidateName: "Michael Chen",
+          position: "Backend Developer",
+          date: "Oct 26, 2024",
+          time: "2:00 PM",
+          interviewers: ["Jane Smith (HR)"],
+          roundName: "HR Round",
+          status: "Scheduled",
+          link: "https://meet.google.com/xyz-abcd-efg"
         }
       ];
-      setInterviews(sampleInterviews);
-      localStorage.setItem("hrInterviews", JSON.stringify(sampleInterviews));
+      setInterviews(dummyData);
+      localStorage.setItem("hrInterviews", JSON.stringify(dummyData));
+    } else {
+      setInterviews(saved);
     }
+
+    // Optional listener if interviewing happens in real-time
+    const handleStorage = () => {
+      const updated = JSON.parse(localStorage.getItem("hrInterviews") || "[]");
+      if (updated.length > 0) setInterviews(updated);
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
-  // Update interview status
-  const updateInterviewStatus = (interviewId, newStatus) => {
-    const updatedInterviews = interviews.map(interview =>
-      interview.id === interviewId ? { ...interview, status: newStatus } : interview
-    );
-    setInterviews(updatedInterviews);
-    localStorage.setItem("hrInterviews", JSON.stringify(updatedInterviews));
+  const updateStatus = (id, newStatus) => {
+    const updated = interviews.map(i => i.id === id ? { ...i, status: newStatus } : i);
+    setInterviews(updated);
+    localStorage.setItem("hrInterviews", JSON.stringify(updated));
   };
-
-  // Schedule new interview
-  const scheduleInterview = (newInterview) => {
-    const interviewWithId = {
-      ...newInterview,
-      id: Date.now(),
-      status: "scheduled"
-    };
-    const updatedInterviews = [...interviews, interviewWithId];
-    setInterviews(updatedInterviews);
-    localStorage.setItem("hrInterviews", JSON.stringify(updatedInterviews));
-    setShowScheduleForm(false);
-  };
-
-  // Filter interviews
-  const filteredInterviews = interviews.filter(interview => {
-    const matchesSearch = interview.candidateName.toLowerCase().includes(search.toLowerCase()) ||
-                          interview.position.toLowerCase().includes(search.toLowerCase());
-    const matchesFilter = filterType === "all" || interview.status === filterType;
-    const matchesDate = !filterDate || interview.date === filterDate;
-    return matchesSearch && matchesFilter && matchesDate;
-  });
-
-  // Get upcoming interviews
-  const today = new Date().toISOString().split('T')[0];
-  const upcomingInterviews = interviews.filter(
-    i => i.status === "scheduled" && i.date >= today
-  ).length;
 
   const getStatusBadge = (status) => {
-    const config = {
-      scheduled: { color: "#3b82f6", bg: "#dbeafe", label: "Scheduled", icon: Calendar },
-      completed: { color: "#10b981", bg: "#d1fae5", label: "Completed", icon: CheckCircle },
-      cancelled: { color: "#ef4444", bg: "#fee2e2", label: "Cancelled", icon: XCircle },
-      rescheduled: { color: "#f59e0b", bg: "#fef3c7", label: "Rescheduled", icon: AlertCircle }
-    };
-    const { color, bg, label, icon: Icon } = config[status] || config.scheduled;
-    return (
-      <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: bg, color: color, padding: "4px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "500" }}>
-        <Icon size={12} />
-        {label}
-      </span>
-    );
+    const s = status ? status.toLowerCase() : "scheduled";
+    // Blue, Green, Purple, Gold mapping as requested
+    if (s === "scheduled") return <span style={{ background: "#dbeafe", color: "#2563eb", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "600" }}>Scheduled</span>;
+    if (s === "completed") return <span style={{ background: "#d1fae5", color: "#059669", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "600" }}>Completed</span>;
+    if (s === "final") return <span style={{ background: "#f3e8ff", color: "#7e22ce", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "600" }}>Final</span>;
+    if (s === "hired") return <span style={{ background: "#fef08a", color: "#854d0e", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "600" }}>Hired</span>;
+    
+    // Fallbacks just in case
+    if (s === "cancelled") return <span style={{ background: "#fee2e2", color: "#dc2626", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "600" }}>Cancelled</span>;
+    return <span style={{ background: "#f1f5f9", color: "#475569", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "600" }}>{status}</span>;
   };
 
-  const getInterviewTypeIcon = (type) => {
-    const icons = {
-      video: Video,
-      phone: Phone,
-      inperson: MapPin
-    };
-    const Icon = icons[type] || Video;
-    return <Icon size={16} />;
+  const handleJoinMeeting = (link) => {
+    if (link) window.open(link, '_blank', 'noopener,noreferrer');
   };
 
-  const formatDate = (dateString) => {
-    const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
+  const handleViewDetails = (interview) => {
+    setSelectedInterview(interview);
   };
 
-  // Stats
-  const stats = {
-    total: interviews.length,
-    scheduled: interviews.filter(i => i.status === "scheduled").length,
-    completed: interviews.filter(i => i.status === "completed").length,
-    upcoming: upcomingInterviews
-  };
+  const upcomingInterviews = interviews.filter(i => (i.status || "").toLowerCase() === "scheduled");
+  const pastInterviews = interviews.filter(i => (i.status || "").toLowerCase() !== "scheduled");
 
   return (
-    <div style={{ padding: "24px", maxWidth: "1400px", margin: "0 auto" }}>
+    <div style={{ padding: "24px", maxWidth: "1200px", margin: "0 auto" }}>
       
-      {/* Header */}
-      <PageHeader
-        title="Interviews"
-        subtitle="Manage and schedule candidate interviews"
-      />
+      {/* 1. Page Heading */}
+      <div style={{
+        marginBottom: "30px",
+        padding: "25px",
+        background: "linear-gradient(135deg, rgb(20, 184, 166) 0%, rgb(14, 165, 233) 100%)",
+        borderRadius: "16px",
+        color: "white",
+        boxShadow: "0 4px 20px rgba(20, 184, 166, 0.3)"
+      }}>
+        <h1 style={{ fontSize: "28px", fontWeight: "700", marginBottom: "8px", color: "white" }}>
+          Interviews Dashboard
+        </h1>
+        <p style={{ fontSize: "16px", opacity: "0.9", margin: "0", color: "rgba(255, 255, 255, 0.9)" }}>
+          Manage your scheduled meetings, change statuses, and review feedback.
+        </p>
+      </div>
 
-      {/* Stats Cards */}
+      {/* 2. Top Summary Stat Cards */}
       <div style={{
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-        gap: "20px",
-        marginBottom: "30px"
+        gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+        gap: "24px",
+        marginBottom: "40px"
       }}>
-        <div style={{ background: "white", padding: "20px", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
-          <p style={{ color: "#64748b", fontSize: "13px", marginBottom: "8px" }}>Total Interviews</p>
-          <h3 style={{ fontSize: "32px", fontWeight: "bold", color: "#0f172a", margin: 0 }}>{stats.total}</h3>
+        <div style={{ background: "white", borderRadius: "12px", padding: "24px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", border: "1px solid #e2e8f0" }}>
+          <p style={{ color: "#64748b", fontSize: "14px", fontWeight: "600", textTransform: "uppercase", marginBottom: "8px", letterSpacing: "0.5px" }}>Total Interviews</p>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <h3 style={{ fontSize: "36px", fontWeight: "800", color: "#0f172a", margin: 0 }}>{interviews.length}</h3>
+          </div>
         </div>
-        <div style={{ background: "white", padding: "20px", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
-          <p style={{ color: "#64748b", fontSize: "13px", marginBottom: "8px" }}>Scheduled</p>
-          <h3 style={{ fontSize: "32px", fontWeight: "bold", color: "#3b82f6", margin: 0 }}>{stats.scheduled}</h3>
+
+        <div style={{ background: "white", borderRadius: "12px", padding: "24px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", border: "1px solid #e2e8f0" }}>
+          <p style={{ color: "#64748b", fontSize: "14px", fontWeight: "600", textTransform: "uppercase", marginBottom: "8px", letterSpacing: "0.5px" }}>Scheduled</p>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <h3 style={{ fontSize: "36px", fontWeight: "800", color: "#3b82f6", margin: 0 }}>{upcomingInterviews.length}</h3>
+            <span style={{ color: "#64748b", fontSize: "14px", fontWeight: "500" }}>Upcoming</span>
+          </div>
         </div>
-        <div style={{ background: "white", padding: "20px", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
-          <p style={{ color: "#64748b", fontSize: "13px", marginBottom: "8px" }}>Completed</p>
-          <h3 style={{ fontSize: "32px", fontWeight: "bold", color: "#10b981", margin: 0 }}>{stats.completed}</h3>
-        </div>
-        <div style={{ background: "white", padding: "20px", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
-          <p style={{ color: "#64748b", fontSize: "13px", marginBottom: "8px" }}>Upcoming</p>
-          <h3 style={{ fontSize: "32px", fontWeight: "bold", color: "#f59e0b", margin: 0 }}>{stats.upcoming}</h3>
+
+        <div style={{ background: "white", borderRadius: "12px", padding: "24px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", border: "1px solid #e2e8f0" }}>
+          <p style={{ color: "#64748b", fontSize: "14px", fontWeight: "600", textTransform: "uppercase", marginBottom: "8px", letterSpacing: "0.5px" }}>Completed & Beyond</p>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <h3 style={{ fontSize: "36px", fontWeight: "800", color: "#10b981", margin: 0 }}>{pastInterviews.length}</h3>
+            <span style={{ color: "#10b981", fontSize: "14px", fontWeight: "600" }}>Tracked</span>
+          </div>
         </div>
       </div>
 
-      {/* Actions Bar */}
-      <div style={{
-        background: "white",
-        borderRadius: "12px",
-        border: "1px solid #e2e8f0",
-        padding: "16px",
-        marginBottom: "24px",
-        display: "flex",
-        flexWrap: "wrap",
-        gap: "16px",
-        alignItems: "center",
-        justifyContent: "space-between"
-      }}>
-        <div style={{ display: "flex", gap: "12px", flex: "1", minWidth: "300px" }}>
-          <div style={{ flex: 1, position: "relative" }}>
-            <Search style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", width: "18px", height: "18px", color: "#94a3b8" }} />
-            <input
-              type="text"
-              placeholder="Search by candidate or position..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{ width: "100%", padding: "10px 12px 10px 38px", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "14px", outline: "none" }}
-            />
-          </div>
-          <div style={{ position: "relative", minWidth: "140px" }}>
-            <Filter style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", width: "16px", height: "16px", color: "#94a3b8" }} />
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              style={{ width: "100%", padding: "10px 12px 10px 36px", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "14px", background: "white", cursor: "pointer" }}
-            >
-              <option value="all">All Status</option>
-              <option value="scheduled">Scheduled</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-          </div>
-          <input
-            type="date"
-            value={filterDate}
-            onChange={(e) => setFilterDate(e.target.value)}
-            style={{ padding: "10px 12px", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "14px", minWidth: "150px" }}
-          />
-        </div>
-        <div style={{ display: "flex", gap: "12px" }}>
-          <button
-            onClick={() => setShowScheduleForm(true)}
-            style={{
-              background: "linear-gradient(135deg, rgb(20, 184, 166) 0%, rgb(14, 165, 233) 100%)",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              padding: "10px 20px",
-              fontSize: "14px",
-              fontWeight: "500",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px"
-            }}
-          >
-            <Plus size={16} />
-            Schedule Interview
-          </button>
-          <button style={{
-            background: "white",
-            border: "1px solid #e2e8f0",
-            borderRadius: "8px",
-            padding: "10px 20px",
-            fontSize: "14px",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px"
+      {/* Helper to render an Interview Card */}
+      {(() => {
+        const renderCard = (interview) => (
+          <div key={interview.id} style={{
+            background: "white", borderRadius: "16px", padding: "24px",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.05)", border: "1px solid #e2e8f0",
+            display: "flex", flexDirection: "column", justifyContent: "space-between"
           }}>
-            <Download size={16} />
-            Export
-          </button>
-        </div>
-      </div>
-
-      {/* Interviews Grid */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))",
-        gap: "20px"
-      }}>
-        {filteredInterviews.map((interview) => (
-          <div
-            key={interview.id}
-            style={{
-              background: "white",
-              borderRadius: "12px",
-              border: "1px solid #e2e8f0",
-              overflow: "hidden",
-              transition: "all 0.3s ease",
-              cursor: "pointer"
-            }}
-            onClick={() => setSelectedInterview(interview)}
-          >
-            <div style={{ padding: "20px" }}>
-              {/* Header */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "16px" }}>
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
                 <div>
-                  <h3 style={{ fontSize: "16px", fontWeight: "600", color: "#0f172a", marginBottom: "4px" }}>
-                    {interview.candidateName}
-                  </h3>
-                  <p style={{ fontSize: "13px", color: "#64748b" }}>{interview.position}</p>
+                  <h3 style={{ fontSize: "18px", fontWeight: "700", color: "#0f172a", margin: "0 0 4px 0" }}>{interview.candidateName}</h3>
+                  <p style={{ margin: 0, fontSize: "14px", color: "#64748b", fontWeight: "500" }}>{interview.position}</p>
                 </div>
-                {getStatusBadge(interview.status)}
+                {getStatusBadge(interview.status || "Scheduled")}
               </div>
 
-              {/* Details */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "20px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "12px", fontSize: "14px", color: "#475569" }}>
-                  <Calendar size={16} style={{ color: "#94a3b8" }} />
-                  <span>{formatDate(interview.date)}</span>
-                  <Clock size={16} style={{ color: "#94a3b8", marginLeft: "8px" }} />
-                  <span>{interview.time} ({interview.duration} min)</span>
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "24px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", color: "#475569" }}>
+                  <Calendar size={18} color="#94a3b8" />
+                  <span>{interview.date} {interview.time && `at ${interview.time}`}</span>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", color: "#475569" }}>
-                  {getInterviewTypeIcon(interview.type)}
-                  <span>
-                    {interview.type === "video" && `Video Call: ${interview.link}`}
-                    {interview.type === "phone" && `Phone: ${interview.phoneNumber}`}
-                    {interview.type === "inperson" && `In-person: ${interview.location}`}
-                  </span>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", color: "#475569" }}>
+                  <User size={18} color="#94a3b8" />
+                  <span>{(interview.interviewers || []).join(", ") || interview.interviewer || "Unassigned"}</span>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#64748b" }}>
-                  <Users size={14} />
-                  <span>{interview.interviewers.join(", ")}</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", color: "#475569" }}>
+                  <List size={18} color="#94a3b8" />
+                  <span style={{ fontWeight: "500", color: "#0f172a" }}>{interview.roundName || "General Round"}</span>
+                </div>
+                
+                {/* Instant Status Dropdown for HR */}
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", color: "#0f172a", marginTop: "4px" }}>
+                  <Award size={18} color="#20b8a6" />
+                  <div style={{ position: "relative", flex: 1 }}>
+                    <select 
+                      value={interview.status || "Scheduled"}
+                      onChange={(e) => updateStatus(interview.id, e.target.value)}
+                      style={{ 
+                        width: "100%", padding: "6px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", 
+                        fontSize: "13px", fontWeight: "600", color: "#334155", appearance: "none", cursor: "pointer", background: "white" 
+                      }}
+                    >
+                      <option value="Scheduled">Scheduled</option>
+                      <option value="Completed">Completed</option>
+                      <option value="Final">Final</option>
+                      <option value="Hired">Hired</option>
+                    </select>
+                    <ChevronDown size={14} style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "#64748b" }} />
+                  </div>
                 </div>
               </div>
+            </div>
 
-              {/* Action Buttons */}
-              {interview.status === "scheduled" && (
-                <div style={{ display: "flex", gap: "12px", paddingTop: "16px", borderTop: "1px solid #f1f5f9" }}>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); updateInterviewStatus(interview.id, "completed"); }}
-                    style={{ flex: 1, padding: "8px", background: "#10b981", color: "white", border: "none", borderRadius: "6px", fontSize: "13px", cursor: "pointer" }}
-                  >
-                    Mark Completed
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); updateInterviewStatus(interview.id, "cancelled"); }}
-                    style={{ flex: 1, padding: "8px", background: "#ef4444", color: "white", border: "none", borderRadius: "6px", fontSize: "13px", cursor: "pointer" }}
-                  >
-                    Cancel
-                  </button>
-                </div>
+            <div style={{ display: "flex", gap: "12px", borderTop: "1px solid #f1f5f9", paddingTop: "20px" }}>
+              {interview.link && (
+                <button 
+                  onClick={() => handleJoinMeeting(interview.link)}
+                  style={{
+                    flex: 1, padding: "10px 0", background: "linear-gradient(135deg, rgb(20, 184, 166) 0%, rgb(14, 165, 233) 100%)",
+                    color: "white", border: "none", borderRadius: "8px", fontWeight: "600", fontSize: "14px",
+                    cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px"
+                  }}
+                >
+                  <Video size={16} /> Join
+                </button>
               )}
+              <button 
+                onClick={() => handleViewDetails(interview)}
+                style={{
+                  flex: 1, padding: "10px 0", background: "white", color: "#475569", 
+                  border: "1px solid #cbd5e1", borderRadius: "8px", fontWeight: "600", fontSize: "14px",
+                  cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px"
+                }}
+              >
+                View Details <ChevronRight size={16} />
+              </button>
             </div>
           </div>
-        ))}
-      </div>
+        );
 
-      {/* Empty State */}
-      {filteredInterviews.length === 0 && (
-        <div style={{ textAlign: "center", padding: "60px", background: "white", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
-          <Calendar size={48} style={{ color: "#94a3b8", marginBottom: "16px" }} />
-          <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#0f172a", marginBottom: "8px" }}>No interviews found</h3>
-          <p style={{ color: "#64748b", marginBottom: "20px" }}>Schedule your first interview to get started</p>
-          <button
-            onClick={() => setShowScheduleForm(true)}
-            style={{ background: "linear-gradient(135deg, rgb(20, 184, 166) 0%, rgb(14, 165, 233) 100%)", color: "white", border: "none", borderRadius: "8px", padding: "10px 20px", cursor: "pointer" }}
-          >
-            + Schedule Interview
-          </button>
-        </div>
-      )}
+        return (
+          <>
+            {/* Upcoming Interviews */}
+            <div style={{ marginBottom: "50px" }}>
+              <h2 style={{ fontSize: "20px", fontWeight: "700", color: "#0f172a", marginBottom: "20px", paddingBottom: "10px", borderBottom: "2px solid #e2e8f0" }}>
+                Upcoming Interviews
+              </h2>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: "20px" }}>
+                {upcomingInterviews.length === 0 ? <p style={{ color: "#64748b" }}>No upcoming interviews scheduled.</p> : upcomingInterviews.map(renderCard)}
+              </div>
+            </div>
 
-      {/* Interview Details Modal */}
+            {/* Past/Updated Interviews */}
+            <div>
+              <h2 style={{ fontSize: "20px", fontWeight: "700", color: "#0f172a", marginBottom: "20px", paddingBottom: "10px", borderBottom: "2px solid #e2e8f0" }}>
+                Past / Updated States
+              </h2>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: "20px" }}>
+                {pastInterviews.length === 0 ? <p style={{ color: "#64748b" }}>No historical interviews tracked yet.</p> : pastInterviews.map(renderCard)}
+              </div>
+            </div>
+          </>
+        );
+      })()}
+
+      {/* Details Modal */}
       {selectedInterview && (
         <div style={{
-          position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)",
-          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "20px"
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)",
+          display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000, padding: "20px"
         }} onClick={() => setSelectedInterview(null)}>
-          <div style={{ background: "white", borderRadius: "16px", maxWidth: "500px", width: "100%", maxHeight: "80vh", overflowY: "auto", padding: "24px" }} onClick={(e) => e.stopPropagation()}>
-            <h2 style={{ fontSize: "20px", fontWeight: "bold", marginBottom: "20px" }}>Interview Details</h2>
-            <div style={{ display: "grid", gap: "16px", marginBottom: "24px" }}>
-              <div><strong>Candidate:</strong> {selectedInterview.candidateName}</div>
-              <div><strong>Position:</strong> {selectedInterview.position}</div>
-              <div><strong>Date & Time:</strong> {formatDate(selectedInterview.date)} at {selectedInterview.time}</div>
-              <div><strong>Duration:</strong> {selectedInterview.duration} minutes</div>
-              <div><strong>Interviewers:</strong> {selectedInterview.interviewers.join(", ")}</div>
-              <div><strong>Notes:</strong> {selectedInterview.notes}</div>
-              {selectedInterview.feedback && <div><strong>Feedback:</strong> {selectedInterview.feedback}</div>}
-              {selectedInterview.cancelReason && <div><strong>Cancellation Reason:</strong> {selectedInterview.cancelReason}</div>}
+          <div style={{ background: "white", borderRadius: "24px", width: "550px", maxWidth: "90%", maxHeight: "85vh", overflowY: "auto", padding: "30px" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", borderBottom: "1px solid #f1f5f9", paddingBottom: "20px" }}>
+              <div>
+                <h2 style={{ fontSize: "24px", fontWeight: "700", margin: "0 0 8px 0" }}>{selectedInterview.candidateName}</h2>
+                <p style={{ color: "#64748b", margin: 0, fontWeight: "500" }}>{selectedInterview.position}</p>
+              </div>
+              {getStatusBadge(selectedInterview.status)}
             </div>
-            <div style={{ display: "flex", gap: "12px" }}>
-              <button onClick={() => setSelectedInterview(null)} style={{ flex: 1, padding: "10px", border: "1px solid #e2e8f0", borderRadius: "8px", background: "white", cursor: "pointer" }}>Close</button>
-              {selectedInterview.type === "video" && selectedInterview.link && (
-                <a href={selectedInterview.link} target="_blank" rel="noopener noreferrer" style={{ flex: 1, textAlign: "center", padding: "10px", background: "linear-gradient(135deg, rgb(20, 184, 166) 0%, rgb(14, 165, 233) 100%)", color: "white", borderRadius: "8px", textDecoration: "none" }}>
-                  Join Meeting
-                </a>
+            
+            <div style={{ marginBottom: "25px" }}>
+              <div style={{ background: "#f8fafc", padding: "20px", borderRadius: "12px", marginBottom: "20px" }}>
+                <h4 style={{ margin: "0 0 15px 0", fontSize: "15px", fontWeight: "700", display: "flex", alignItems: "center", gap: "8px", color: "#0f172a" }}><Calendar size={18} color="#20b8a6"/> Interview Set</h4>
+                <div style={{ display: "grid", gap: "10px", fontSize: "14px", color: "#334155" }}>
+                  <div><strong style={{ color: "#0f172a" }}>Date / Time:</strong> {selectedInterview.date} {selectedInterview.time && `at ${selectedInterview.time}`}</div>
+                  <div><strong style={{ color: "#0f172a" }}>Interviewer:</strong> {(selectedInterview.interviewers || []).join(", ") || selectedInterview.interviewer || "Unassigned"}</div>
+                  <div><strong style={{ color: "#0f172a" }}>Round:</strong> {selectedInterview.roundName || "General Round"}</div>
+                </div>
+              </div>
+
+              {/* Parsed Feedback block if exists */}
+              {selectedInterview.submittedFeedback ? (
+                <div style={{ padding: "20px", background: "#f0fdf4", borderRadius: "12px", border: "1px solid #dcfce7" }}>
+                  <h4 style={{ margin: "0 0 15px 0", fontSize: "15px", fontWeight: "700", color: "#166534", display: "flex", alignItems: "center", gap: "8px" }}>
+                    <FileText size={18}/> Interviewer Feedback
+                  </h4>
+                  
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "15px" }}>
+                    <span style={{ fontWeight: "600", fontSize: "14px", color: "#166534" }}>Rating:</span>
+                    <div style={{ display: "flex", gap: "2px" }}>
+                      {[1,2,3,4,5].map(star => (
+                        <Star key={star} size={16} fill={star <= selectedInterview.submittedFeedback.rating ? "#f59e0b" : "none"} color={star <= selectedInterview.submittedFeedback.rating ? "#f59e0b" : "#cbd5e1"} />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div style={{ display: "grid", gap: "12px", fontSize: "14px" }}>
+                    <div>
+                      <strong style={{ color: "#14532d", display: "block", marginBottom: "4px" }}>Technical Edge:</strong>
+                      <span style={{ color: "#166534" }}>{selectedInterview.submittedFeedback.technicalSkills}</span>
+                    </div>
+                    <div>
+                      <strong style={{ color: "#14532d", display: "block", marginBottom: "4px" }}>Communication:</strong>
+                      <span style={{ color: "#166534" }}>{selectedInterview.submittedFeedback.communicationSkills}</span>
+                    </div>
+                    <div>
+                      <strong style={{ color: "#14532d", display: "block", marginBottom: "4px" }}>Overall Summary:</strong>
+                      <span style={{ color: "#166534" }}>{selectedInterview.submittedFeedback.overallFeedback}</span>
+                    </div>
+                    <div style={{ marginTop: "10px", padding: "10px", background: "white", borderRadius: "8px", fontWeight: "600", color: "#15803d", display: "inline-block" }}>
+                      Interviewer Suggestion: {selectedInterview.submittedFeedback.result}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ padding: "20px", background: "#f1f5f9", borderRadius: "12px", textAlign: "center", color: "#64748b" }}>
+                  <FileText size={24} style={{ opacity: 0.5, marginBottom: "8px" }} />
+                  <p style={{ margin: 0, fontSize: "14px" }}>No formal feedback submitted yet.</p>
+                </div>
               )}
             </div>
+            <button onClick={() => setSelectedInterview(null)} style={{ width: "100%", padding: "14px", background: "linear-gradient(135deg, rgb(20, 184, 166) 0%, rgb(14, 165, 233) 100%)", color: "white", border: "none", borderRadius: "12px", cursor: "pointer", fontWeight: "600", transition: "opacity 0.2s" }} onMouseEnter={e => e.currentTarget.style.opacity = 0.9} onMouseLeave={e => e.currentTarget.style.opacity = 1}>Close Window</button>
           </div>
         </div>
       )}
 
-      {/* Schedule Interview Modal */}
-      {showScheduleForm && (
-        <ScheduleInterviewModal onClose={() => setShowScheduleForm(false)} onSchedule={scheduleInterview} />
-      )}
-    </div>
-  );
-};
-
-// Schedule Interview Modal Component
-const ScheduleInterviewModal = ({ onClose, onSchedule }) => {
-  const [formData, setFormData] = useState({
-    candidateName: "",
-    candidateEmail: "",
-    candidatePhone: "",
-    position: "",
-    date: "",
-    time: "",
-    duration: "60",
-    type: "video",
-    link: "",
-    phoneNumber: "",
-    location: "",
-    interviewers: "",
-    notes: ""
-  });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const interviewers = formData.interviewers.split(",").map(i => i.trim());
-    onSchedule({ ...formData, interviewers });
-  };
-
-  return (
-    <div style={{
-      position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)",
-      display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "20px"
-    }} onClick={onClose}>
-      <div style={{ background: "white", borderRadius: "16px", maxWidth: "500px", width: "100%", maxHeight: "80vh", overflowY: "auto", padding: "24px" }} onClick={(e) => e.stopPropagation()}>
-        <h2 style={{ fontSize: "20px", fontWeight: "bold", marginBottom: "20px" }}>Schedule Interview</h2>
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          <input type="text" placeholder="Candidate Name *" required value={formData.candidateName} onChange={(e) => setFormData({...formData, candidateName: e.target.value})} style={{ padding: "10px", border: "1px solid #e2e8f0", borderRadius: "8px" }} />
-          <input type="email" placeholder="Candidate Email *" required value={formData.candidateEmail} onChange={(e) => setFormData({...formData, candidateEmail: e.target.value})} style={{ padding: "10px", border: "1px solid #e2e8f0", borderRadius: "8px" }} />
-          <input type="tel" placeholder="Candidate Phone" value={formData.candidatePhone} onChange={(e) => setFormData({...formData, candidatePhone: e.target.value})} style={{ padding: "10px", border: "1px solid #e2e8f0", borderRadius: "8px" }} />
-          <input type="text" placeholder="Position *" required value={formData.position} onChange={(e) => setFormData({...formData, position: e.target.value})} style={{ padding: "10px", border: "1px solid #e2e8f0", borderRadius: "8px" }} />
-          
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-            <input type="date" placeholder="Date *" required value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} style={{ padding: "10px", border: "1px solid #e2e8f0", borderRadius: "8px" }} />
-            <input type="time" placeholder="Time *" required value={formData.time} onChange={(e) => setFormData({...formData, time: e.target.value})} style={{ padding: "10px", border: "1px solid #e2e8f0", borderRadius: "8px" }} />
-          </div>
-          
-          <select value={formData.duration} onChange={(e) => setFormData({...formData, duration: e.target.value})} style={{ padding: "10px", border: "1px solid #e2e8f0", borderRadius: "8px" }}>
-            <option value="30">30 minutes</option>
-            <option value="45">45 minutes</option>
-            <option value="60">60 minutes</option>
-            <option value="90">90 minutes</option>
-          </select>
-          
-          <select value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value})} style={{ padding: "10px", border: "1px solid #e2e8f0", borderRadius: "8px" }}>
-            <option value="video">Video Call</option>
-            <option value="phone">Phone Call</option>
-            <option value="inperson">In-person</option>
-          </select>
-          
-          {formData.type === "video" && (
-            <input type="url" placeholder="Meeting Link *" required value={formData.link} onChange={(e) => setFormData({...formData, link: e.target.value})} style={{ padding: "10px", border: "1px solid #e2e8f0", borderRadius: "8px" }} />
-          )}
-          {formData.type === "phone" && (
-            <input type="tel" placeholder="Phone Number *" required value={formData.phoneNumber} onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})} style={{ padding: "10px", border: "1px solid #e2e8f0", borderRadius: "8px" }} />
-          )}
-          {formData.type === "inperson" && (
-            <input type="text" placeholder="Location *" required value={formData.location} onChange={(e) => setFormData({...formData, location: e.target.value})} style={{ padding: "10px", border: "1px solid #e2e8f0", borderRadius: "8px" }} />
-          )}
-          
-          <input type="text" placeholder="Interviewers (comma separated)" value={formData.interviewers} onChange={(e) => setFormData({...formData, interviewers: e.target.value})} style={{ padding: "10px", border: "1px solid #e2e8f0", borderRadius: "8px" }} />
-          <textarea placeholder="Notes" rows="3" value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} style={{ padding: "10px", border: "1px solid #e2e8f0", borderRadius: "8px", resize: "vertical" }} />
-          
-          <div style={{ display: "flex", gap: "12px", marginTop: "8px" }}>
-            <button type="button" onClick={onClose} style={{ flex: 1, padding: "10px", border: "1px solid #e2e8f0", borderRadius: "8px", background: "white", cursor: "pointer" }}>Cancel</button>
-            <button type="submit" style={{ flex: 1, padding: "10px", background: "linear-gradient(135deg, rgb(20, 184, 166) 0%, rgb(14, 165, 233) 100%)", color: "white", border: "none", borderRadius: "8px", cursor: "pointer" }}>Schedule</button>
-          </div>
-        </form>
-      </div>
     </div>
   );
 };

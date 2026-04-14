@@ -347,34 +347,7 @@ const JobDetails = () => {
             </p>
           </div>
 
-          {/* Apply Now Button */}
-          <div style={{ textAlign: "center", borderTop: "1px solid #e2e8f0", paddingTop: "40px" }}>
-            <button
-              onClick={() => alert("Application submitted! (Demo)")}
-              style={{
-                background: "linear-gradient(135deg, rgb(20, 184, 166) 0%, rgb(14, 165, 233) 100%)",
-                color: "white",
-                border: "none",
-                borderRadius: "12px",
-                padding: "16px 48px",
-                fontSize: "18px",
-                fontWeight: "600",
-                cursor: "pointer",
-                transition: "all 0.3s ease",
-                boxShadow: "0 4px 20px rgba(20, 184, 166, 0.3)",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-2px)";
-                e.currentTarget.style.boxShadow = "0 6px 25px rgba(20, 184, 166, 0.4)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "0 4px 20px rgba(20, 184, 166, 0.3)";
-              }}
-            >
-              Apply Now
-            </button>
-          </div>
+
         </div>
       </div>
     </div>
