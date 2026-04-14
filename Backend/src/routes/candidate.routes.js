@@ -59,8 +59,8 @@ router.get(
 );
 
 // Respond to Interview (🔥 MAIN FEATURE)
-router.put(
-  "/interview/respond/:interviewId",
+router.patch(
+  "/respond/:interviewId",
   verifyJWT,
   authorizeRoles("CANDIDATE"),
   respondToInterview

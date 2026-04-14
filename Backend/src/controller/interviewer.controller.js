@@ -2,6 +2,8 @@ import {Application} from "../models/application.model.js";
 import Job from "../models/job.model.cjs";
 import User from "../models/user.cjs";
 import Interview from "../models/interview.model.js";
+import { sendEmail } from "../utils/email.js";
+import { interviewMailTemplate } from "../utils/emailTemplates.js";
 
 export const updateAvailability = async (req, res) => {
   try {
@@ -92,6 +94,8 @@ export const updateCapacity = async (req, res) => {
 //   }
 // };
 
+
+
 export const scheduleInterview = async (req, res) => {
   try {
     const { interviewId } = req.params;
@@ -107,30 +111,69 @@ export const scheduleInterview = async (req, res) => {
       return res.status(403).json({ message: "Unauthorized" });
     }
 
-    // 🔥 Convert to Date
-    const scheduledTime = new Date(`${date}T${time}:00`);
+    if (interview.status === "COMPLETED") {
+      return res.status(400).json({
+        message: "Interview already completed"
+      });
+    }
 
-    // 🔥 Conflict Check (IMPORTANT)
-    const conflict = await Interview.findOne({
+    const startTime = new Date(`${date}T${time}:00`);
+
+    if (isNaN(startTime.getTime())) {
+      return res.status(400).json({
+        message: "Invalid date or time"
+      });
+    }
+
+    const duration = 30 * 60 * 1000;
+    const endTime = new Date(startTime.getTime() + duration);
+
+    // 🔥 OVERLAP CHECK
+    const conflicts = await Interview.find({
       interviewer: req.user._id,
-      scheduledAt: scheduledTime,
-      status: { $in: ["SCHEDULED"] }
+      status: "SCHEDULED",
+      _id: { $ne: interviewId }
     });
 
-    if (conflict) {
+    const isConflict = conflicts.some((i) => {
+      const existingStart = new Date(i.scheduledAt);
+      const existingEnd = new Date(existingStart.getTime() + duration);
+      return startTime < existingEnd && endTime > existingStart;
+    });
+
+    if (isConflict) {
       return res.status(400).json({
-        message: "You already have an interview at this time"
+        message: "Time slot overlaps with another interview"
       });
     }
 
     // ✅ Save
-    interview.scheduledAt = scheduledTime;
+    interview.scheduledAt = startTime;
     interview.mode = mode;
     interview.meetingLink = meetingLink;
     interview.location = location;
     interview.status = "SCHEDULED";
+    interview.candidateResponse = "PENDING";
 
     await interview.save();
+
+    // 🔥 EMAIL NOTIFICATION
+    const candidate = await User.findById(interview.candidate);
+    const job = await Job.findById(interview.job);
+
+    await sendEmail({
+      to: candidate.email,
+      subject: "Interview Scheduled",
+      html: interviewMailTemplate({
+        candidateName: candidate.name,
+        jobTitle: job.title,
+        company: job.company,
+        round: interview.roundNumber,
+        date: startTime.toLocaleString(),
+        mode: mode,
+        message: "Your interview has been scheduled."
+      })
+    });
 
     res.status(200).json({
       message: "Interview scheduled successfully",
@@ -138,9 +181,11 @@ export const scheduleInterview = async (req, res) => {
     });
 
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: error.message });
   }
 };
+
 
 export const rescheduleInterview = async (req, res) => {
   try {
@@ -163,26 +208,61 @@ export const rescheduleInterview = async (req, res) => {
       });
     }
 
-    const newTime = new Date(`${date}T${time}:00`);
+    const startTime = new Date(`${date}T${time}:00`);
 
-    // 🔥 Conflict Check (exclude current interview)
-    const conflict = await Interview.findOne({
-      interviewer: req.user._id,
-      scheduledAt: newTime,
-      status: { $in: ["SCHEDULED"] },
-      _id: { $ne: interviewId }
-    });
-
-    if (conflict) {
+    if (isNaN(startTime.getTime())) {
       return res.status(400).json({
-        message: "Time slot already occupied"
+        message: "Invalid date or time"
       });
     }
 
-    interview.scheduledAt = newTime;
+    const duration = 30 * 60 * 1000;
+    const endTime = new Date(startTime.getTime() + duration);
+
+    // 🔥 OVERLAP CHECK
+    const conflicts = await Interview.find({
+      interviewer: req.user._id,
+      status: "SCHEDULED",
+      _id: { $ne: interviewId }
+    });
+
+    const isConflict = conflicts.some((i) => {
+      const existingStart = new Date(i.scheduledAt);
+      const existingEnd = new Date(existingStart.getTime() + duration);
+      return startTime < existingEnd && endTime > existingStart;
+    });
+
+    if (isConflict) {
+      return res.status(400).json({
+        message: "Time slot overlaps with another interview"
+      });
+    }
+
+    // ✅ Update
+    interview.scheduledAt = startTime;
     interview.status = "SCHEDULED";
+    interview.candidateResponse = "PENDING";
+    interview.rescheduleReason = "Rescheduled by interviewer";
+    interview.rescheduleCount = (interview.rescheduleCount || 0) + 1;
 
     await interview.save();
+
+    // 🔥 EMAIL NOTIFICATION
+    const candidate = await User.findById(interview.candidate);
+    const job = await Job.findById(interview.job);
+
+    await sendEmail({
+      to: candidate.email,
+      subject: "Interview Rescheduled",
+      html: interviewMailTemplate({
+        candidateName: candidate.name,
+        jobTitle: job.title,
+        company: job.company,
+        round: interview.roundNumber,
+        date: startTime.toLocaleString(),
+        message: "Your interview has been rescheduled."
+      })
+    });
 
     res.status(200).json({
       message: "Rescheduled successfully",
@@ -190,6 +270,7 @@ export const rescheduleInterview = async (req, res) => {
     });
 
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -204,47 +285,119 @@ export const completeInterview = async (req, res) => {
     const interview = await Interview.findById(interviewId);
 
     if (!interview) {
-      return res.status(404).json({ message: "Interview not found" });
+      return res.status(404).json({
+        message: "Interview not found"
+      });
     }
 
-    // 🔐 Authorization
+    // 🔐 AUTH
     if (
       interview.interviewer?.toString() !== req.user._id.toString() &&
       req.user.role !== "HR"
     ) {
-      return res.status(403).json({ message: "Unauthorized" });
+      return res.status(403).json({
+        message: "Unauthorized"
+      });
     }
 
+    // ❌ Prevent double completion
+    if (interview.status === "COMPLETED") {
+      return res.status(400).json({
+        message: "Interview already completed"
+      });
+    }
+
+    // ❌ Validate result
+    if (!["PASS", "FAIL"].includes(result)) {
+      return res.status(400).json({
+        message: "Result must be PASS or FAIL"
+      });
+    }
+
+    // ✅ Update interview
     interview.status = "COMPLETED";
     interview.feedback = feedback;
     interview.result = result;
 
     await interview.save();
 
-    // 🔥 FINAL ROUND LOGIC
-    if (interview.isFinalRound) {
-      const application = await Application.findById(interview.application);
+    // 🔥 Reduce interviewer load
+    const interviewerUser = await User.findById(interview.interviewer);
 
-      if (result === "PASS") {
-        application.status = "selected";
-      } else {
-        application.status = "rejected";
-      }
+    if (interviewerUser && interviewerUser.assignedCount > 0) {
+      interviewerUser.assignedCount -= 1;
+      await interviewerUser.save();
+    }
 
+    // 🔥 Get candidate & job
+    const candidate = await User.findById(interview.candidate);
+    const job = await Job.findById(interview.job);
+
+    // 🔥 SEND RESULT EMAIL
+    await sendEmail({
+      to: candidate.email,
+      subject: "Interview Result",
+      html: interviewMailTemplate({
+        candidateName: candidate.name,
+        jobTitle: job.title,
+        company: job.company,
+        round: interview.roundNumber,
+        result: result,
+        message:
+          result === "PASS"
+            ? "Congratulations! You have cleared this round."
+            : "Unfortunately, you did not clear this round."
+      })
+    });
+
+    // 🔴 UPDATE APPLICATION
+    const application = await Application.findById(interview.application);
+
+    // ❌ FAIL → Reject immediately
+    if (result === "FAIL") {
+      application.status = "rejected";
       await application.save();
 
-      return res.status(200).json({
-        message: "Final decision completed",
-        applicationStatus: application.status
+      return res.json({
+        message: "Candidate rejected",
+        applicationStatus: "rejected"
       });
     }
 
-    return res.status(200).json({
-      message: "Interview completed",
+    // 🔴 FINAL ROUND → FINAL RESULT
+    if (interview.isFinalRound === true) {
+      application.status = "selected";
+      await application.save();
+
+      // ✅ HR notification
+      await sendEmail({
+        to: req.user.email,
+        subject: "Candidate Selected",
+        html: `
+          <h3>Candidate Selected</h3>
+          <p><b>Name:</b> ${candidate.name}</p>
+          <p><b>Email:</b> ${candidate.email}</p>
+          <p><b>Job:</b> ${job.title}</p>
+        `
+      });
+
+      return res.json({
+        message: "Candidate selected 🎉",
+        applicationStatus: "selected"
+      });
+    }
+
+    // 🟢 PASS → WAIT FOR NEXT ROUND (HR will create)
+    application.status = "interview";
+    await application.save();
+
+    res.json({
+      message: "Interview completed - ready for next round",
       interview
     });
 
   } catch (error) {
+    console.error("Complete Interview Error:", error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -255,11 +408,12 @@ export const getMyInterviews = async (req, res) => {
     const userId = req.user._id;
 
     const interviews = await Interview.find({
-      interviewer: userId
+      interviewer: userId,
+      status: { $ne: "COMPLETED" } // 🔥 hide completed
     })
       .populate("candidate", "name email")
       .populate("job", "title")
-      .sort({ createdAt: -1 });
+      .sort({ scheduledAt: 1 }); // better: upcoming first
 
     res.status(200).json({
       count: interviews.length,

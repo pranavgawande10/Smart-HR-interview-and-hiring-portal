@@ -48,11 +48,11 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 
   const existedUser = await User.findOne({
-    $or: [{ name }, { email }],
+    $or: [ { email }],
   });
 
   if (existedUser) {
-    throw new ApiError(400, "User with Name or Email already exists");
+    throw new ApiError(400, "User Email already exists");
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
@@ -374,49 +374,26 @@ export const respondToInterview = async (req, res) => {
     const interview = await Interview.findById(interviewId);
 
     if (!interview) {
-      return res.status(404).json({
-        message: "Interview not found"
-      });
+      return res.status(404).json({ message: "Interview not found" });
     }
 
-    // 🔐 Only candidate can respond
     if (interview.candidate.toString() !== req.user._id.toString()) {
-      return res.status(403).json({
-        message: "Unauthorized"
-      });
+      return res.status(403).json({ message: "Unauthorized" });
     }
 
-    // ❌ Cannot respond after completion
-    if (interview.status === "COMPLETED") {
-      return res.status(400).json({
-        message: "Interview already completed"
-      });
+    interview.candidateResponse = response;
+
+    if (response === "REQUEST_RESCHEDULE") {
+      interview.rescheduleReason = reason;
     }
 
-    // ✅ Handle responses
-    if (response === "ACCEPTED") {
-      interview.candidateResponse = "ACCEPTED";
-    }
-
-    else if (response === "REJECTED") {
-      interview.candidateResponse = "REJECTED";
-      interview.status = "CANCELLED"; // 🔥 cancel interview
-    }
-
-    else if (response === "REQUEST_RESCHEDULE") {
-      interview.candidateResponse = "REQUEST_RESCHEDULE";
-      interview.rescheduleReason = reason || "";
-    }
-
-    else {
-      return res.status(400).json({
-        message: "Invalid response"
-      });
+    if (response === "REJECTED") {
+      interview.status = "CANCELLED";
     }
 
     await interview.save();
 
-    return res.status(200).json({
+    res.json({
       message: "Response submitted",
       interview
     });
@@ -425,5 +402,7 @@ export const respondToInterview = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+
 
 

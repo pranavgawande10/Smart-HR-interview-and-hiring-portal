@@ -38,6 +38,7 @@ const applicationSchema = new mongoose.Schema(
 
     // ❌ REMOVE THIS (not needed anymore)
     // assignedInterviewer
+    
 
     status: {
       type: String,
