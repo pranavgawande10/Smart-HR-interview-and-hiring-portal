@@ -14,6 +14,7 @@ import {
   passwordResetMailgenContent,} from "../utils/mail.js";
 import crypto from "crypto";
 import bcrypt from "bcrypt";
+import Interview from "../models/interview.model.js";
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -47,11 +48,11 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 
   const existedUser = await User.findOne({
-    $or: [{ name }, { email }],
+    $or: [ { email }],
   });
 
   if (existedUser) {
-    throw new ApiError(400, "User with Name or Email already exists");
+    throw new ApiError(400, "User Email already exists");
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
@@ -362,5 +363,46 @@ export {
   changePassword,
   updateProfilePhoto,
 };
+
+
+
+export const respondToInterview = async (req, res) => {
+  try {
+    const { interviewId } = req.params;
+    const { response, reason } = req.body;
+
+    const interview = await Interview.findById(interviewId);
+
+    if (!interview) {
+      return res.status(404).json({ message: "Interview not found" });
+    }
+
+    if (interview.candidate.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    interview.candidateResponse = response;
+
+    if (response === "REQUEST_RESCHEDULE") {
+      interview.rescheduleReason = reason;
+    }
+
+    if (response === "REJECTED") {
+      interview.status = "CANCELLED";
+    }
+
+    await interview.save();
+
+    res.json({
+      message: "Response submitted",
+      interview
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
 
 
