@@ -1,11 +1,8 @@
-
 import { useState } from "react";
-import { UserCircle, Mail, Phone, MapPin, Briefcase, GraduationCap, Award } from "lucide-react";
+import { UserCircle, Mail, Phone, MapPin, Briefcase, GraduationCap, Award, Edit2, Save, X, Upload } from "lucide-react";
 
 const CandidateProfile = () => {
   const [isEditing, setIsEditing] = useState(false);
-  
-  // Sample candidate data
   const [profile, setProfile] = useState({
     name: "John Doe",
     email: "john.doe@example.com",
@@ -19,252 +16,208 @@ const CandidateProfile = () => {
     resume: "John_Doe_Resume_2026.pdf",
   });
 
+  const [editedProfile, setEditedProfile] = useState({ ...profile });
+
+  const handleSave = () => {
+    setProfile(editedProfile);
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setEditedProfile(profile);
+    setIsEditing(false);
+  };
+
+  const addSkill = () => {
+    const newSkill = prompt("Enter new skill:");
+    if (newSkill && !editedProfile.skills.includes(newSkill)) {
+      setEditedProfile({ ...editedProfile, skills: [...editedProfile.skills, newSkill] });
+    }
+  };
+
+  const removeSkill = (skillToRemove) => {
+    setEditedProfile({ ...editedProfile, skills: editedProfile.skills.filter(s => s !== skillToRemove) });
+  };
+
+  const gradientStyle = {
+    background: "linear-gradient(135deg, rgb(20, 184, 166) 0%, rgb(14, 165, 233) 100%)",
+  };
+
+  const buttonStyle = {
+    padding: "10px 20px",
+    borderRadius: "8px",
+    fontSize: "14px",
+    fontWeight: "600",
+    cursor: "pointer",
+    transition: "all 0.3s ease",
+    border: "none",
+  };
+
+  const sectionStyle = {
+    background: "white",
+    borderRadius: "16px",
+    padding: "24px",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+    border: "1px solid #e2e8f0",
+  };
+
+  const SectionHeader = ({ icon: Icon, title }) => (
+    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
+      <Icon size={20} color="rgb(20, 184, 166)" />
+      <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#0f172a", margin: 0 }}>{title}</h3>
+    </div>
+  );
+
   return (
     <div>
-      
-      <div style={{ 
-        display: "flex", 
-        justifyContent: "space-between", 
-        alignItems: "center",
-        marginBottom: "30px" 
-      }}>
+      {/* Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px" }}>
         <div>
-          <h1 style={{ fontSize: "28px", fontWeight: "700", color: "#0f172a", marginBottom: "8px" }}>
-            My Profile
-          </h1>
-          <p style={{ fontSize: "16px", color: "#64748b" }}>
-            Manage your personal information and preferences
-          </p>
+          <h1 style={{ fontSize: "28px", fontWeight: "700", color: "#0f172a", marginBottom: "8px" }}>My Profile</h1>
+          <p style={{ fontSize: "16px", color: "#64748b" }}>Manage your personal information and preferences</p>
         </div>
-        <button
-          onClick={() => setIsEditing(!isEditing)}
-          style={{
-            background: isEditing ? "#14b8a6" : "#8b5cf6",
-            color: "white",
-            border: "none",
-            borderRadius: "8px",
-            padding: "12px 24px",
-            fontSize: "14px",
-            fontWeight: "600",
-            cursor: "pointer",
-            transition: "all 0.3s ease",
-          }}
-        >
-          {isEditing ? "Save Changes" : "Edit Profile"}
-        </button>
+        {!isEditing ? (
+          <button onClick={() => setIsEditing(true)} style={{ ...buttonStyle, ...gradientStyle, color: "white" }}>
+            <Edit2 size={16} style={{ marginRight: "8px", verticalAlign: "middle" }} />
+            Edit Profile
+          </button>
+        ) : (
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button onClick={handleCancel} style={{ ...buttonStyle, background: "#f1f5f9", color: "#64748b" }}>
+              <X size={16} style={{ marginRight: "8px", verticalAlign: "middle" }} />
+              Cancel
+            </button>
+            <button onClick={handleSave} style={{ ...buttonStyle, ...gradientStyle, color: "white" }}>
+              <Save size={16} style={{ marginRight: "8px", verticalAlign: "middle" }} />
+              Save Changes
+            </button>
+          </div>
+        )}
       </div>
 
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "1fr 2fr",
-        gap: "30px",
-      }}>
-       
-        <div style={{
-          background: "white",
-          borderRadius: "16px",
-          padding: "30px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-          border: "1px solid #e2e8f0",
-          textAlign: "center",
-        }}>
-          <div style={{
-            width: "120px",
-            height: "120px",
-            borderRadius: "50%",
-            background: "linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            margin: "0 auto 20px auto",
-          }}>
-            <span style={{ fontSize: "48px", color: "white" }}>👤</span>
-          </div>
-          
-          <h2 style={{ fontSize: "22px", fontWeight: "700", color: "#0f172a", marginBottom: "8px" }}>
-            {profile.name}
-          </h2>
-          <p style={{ fontSize: "16px", color: "#8b5cf6", fontWeight: "500", marginBottom: "16px" }}>
-            {profile.title}
-          </p>
-          
-          <div style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "12px",
-            textAlign: "left",
-            marginTop: "20px",
-            padding: "20px 0",
-            borderTop: "1px solid #e2e8f0",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <Mail size={18} color="#64748b" />
-              <span style={{ color: "#334155" }}>{profile.email}</span>
+      {/* Two Column Layout */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "24px" }}>
+        
+        {/* Left Column - Profile Card */}
+        <div style={sectionStyle}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{
+              width: "120px",
+              height: "120px",
+              borderRadius: "50%",
+              ...gradientStyle,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto 20px auto",
+            }}>
+              <span style={{ fontSize: "48px", color: "white" }}>👤</span>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <Phone size={18} color="#64748b" />
-              <span style={{ color: "#334155" }}>{profile.phone}</span>
+            
+            <h2 style={{ fontSize: "22px", fontWeight: "700", color: "#0f172a", marginBottom: "8px" }}>
+              {isEditing ? editedProfile.name : profile.name}
+            </h2>
+            <p style={{ fontSize: "16px", color: "rgb(20, 184, 166)", fontWeight: "500", marginBottom: "16px" }}>
+              {isEditing ? editedProfile.title : profile.title}
+            </p>
+            
+            <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "20px", textAlign: "left" }}>
+              <InfoRow icon={Mail} text={isEditing ? editedProfile.email : profile.email} />
+              <InfoRow icon={Phone} text={isEditing ? editedProfile.phone : profile.phone} />
+              <InfoRow icon={MapPin} text={isEditing ? editedProfile.location : profile.location} />
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <MapPin size={18} color="#64748b" />
-              <span style={{ color: "#334155" }}>{profile.location}</span>
-            </div>
-          </div>
 
-          
-          <div style={{
-            marginTop: "20px",
-            padding: "20px",
-            background: "#f8fafc",
-            borderRadius: "12px",
-          }}>
-            <h3 style={{ fontSize: "16px", fontWeight: "600", color: "#0f172a", marginBottom: "12px" }}>
-              Resume
-            </h3>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <div style={{
-                background: "#e2e8f0",
-                padding: "8px",
-                borderRadius: "8px",
-              }}>
-                📄
+            {/* Resume Section */}
+            <div style={{ marginTop: "20px", padding: "16px", background: "#f8fafc", borderRadius: "12px" }}>
+              <h3 style={{ fontSize: "14px", fontWeight: "600", color: "#0f172a", marginBottom: "12px" }}>Resume</h3>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div style={{ background: "#e2e8f0", padding: "8px", borderRadius: "8px" }}>📄</div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontWeight: "500", fontSize: "13px", color: "#0f172a" }}>{profile.resume}</p>
+                  <p style={{ fontSize: "11px", color: "#64748b" }}>Uploaded on Jan 15, 2026</p>
+                </div>
+                <button style={{ background: "transparent", border: `1px solid rgb(20, 184, 166)`, color: "rgb(20, 184, 166)", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", cursor: "pointer" }}>
+                  <Upload size={12} style={{ marginRight: "4px", verticalAlign: "middle" }} />
+                  Update
+                </button>
               </div>
-              <div style={{ flex: "1" }}>
-                <p style={{ fontWeight: "500", color: "#0f172a" }}>{profile.resume}</p>
-                <p style={{ fontSize: "12px", color: "#64748b" }}>Uploaded on Jan 15, 2026</p>
-              </div>
-              <button style={{
-                background: "transparent",
-                border: "1px solid #8b5cf6",
-                color: "#8b5cf6",
-                padding: "6px 12px",
-                borderRadius: "6px",
-                fontSize: "12px",
-                cursor: "pointer",
-              }}>
-                Update
-              </button>
             </div>
           </div>
         </div>
 
-       
-        <div style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "30px",
-        }}>
+        {/* Right Column */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
           
-          <div style={{
-            background: "white",
-            borderRadius: "16px",
-            padding: "30px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-            border: "1px solid #e2e8f0",
-          }}>
-            <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#0f172a", marginBottom: "16px" }}>
-              About Me
-            </h3>
+          {/* Bio */}
+          <div style={sectionStyle}>
+            <SectionHeader icon={UserCircle} title="About Me" />
             {isEditing ? (
               <textarea
-                value={profile.bio}
-                onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                style={{
-                  width: "100%",
-                  padding: "12px",
-                  border: "1px solid #e2e8f0",
-                  borderRadius: "8px",
-                  fontSize: "15px",
-                  minHeight: "100px",
-                  fontFamily: "inherit",
-                }}
+                value={editedProfile.bio}
+                onChange={(e) => setEditedProfile({ ...editedProfile, bio: e.target.value })}
+                rows="4"
+                style={{ width: "100%", padding: "12px", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "14px", fontFamily: "inherit", resize: "vertical" }}
               />
             ) : (
-              <p style={{ color: "#334155", lineHeight: "1.6" }}>{profile.bio}</p>
+              <p style={{ color: "#475569", lineHeight: "1.6", fontSize: "14px" }}>{profile.bio}</p>
             )}
           </div>
 
-        
-          <div style={{
-            background: "white",
-            borderRadius: "16px",
-            padding: "30px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-            border: "1px solid #e2e8f0",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
-              <Briefcase size={20} color="#8b5cf6" />
-              <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#0f172a" }}>
-                Work Experience
-              </h3>
-            </div>
-            <div style={{ display: "flex", gap: "20px", marginBottom: "20px" }}>
-              <div style={{ flex: "1" }}>
-                <p style={{ fontSize: "14px", color: "#64748b", marginBottom: "4px" }}>Years of Experience</p>
-                <p style={{ fontSize: "18px", fontWeight: "600", color: "#0f172a" }}>{profile.experience}</p>
+          {/* Work Experience */}
+          <div style={sectionStyle}>
+            <SectionHeader icon={Briefcase} title="Work Experience" />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+              <div>
+                <p style={{ fontSize: "13px", color: "#64748b", marginBottom: "4px" }}>Years of Experience</p>
+                <p style={{ fontSize: "18px", fontWeight: "600", color: "#0f172a" }}>
+                  {isEditing ? editedProfile.experience : profile.experience}
+                </p>
               </div>
-              <div style={{ flex: "1" }}>
-                <p style={{ fontSize: "14px", color: "#64748b", marginBottom: "4px" }}>Current Role</p>
-                <p style={{ fontSize: "18px", fontWeight: "600", color: "#0f172a" }}>{profile.title}</p>
+              <div>
+                <p style={{ fontSize: "13px", color: "#64748b", marginBottom: "4px" }}>Current Role</p>
+                <p style={{ fontSize: "18px", fontWeight: "600", color: "#0f172a" }}>
+                  {isEditing ? editedProfile.title : profile.title}
+                </p>
               </div>
             </div>
           </div>
 
-         
-          <div style={{
-            background: "white",
-            borderRadius: "16px",
-            padding: "30px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-            border: "1px solid #e2e8f0",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
-              <GraduationCap size={20} color="#8b5cf6" />
-              <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#0f172a" }}>
-                Education
-              </h3>
-            </div>
-            <p style={{ fontSize: "16px", color: "#334155" }}>{profile.education}</p>
+          {/* Education */}
+          <div style={sectionStyle}>
+            <SectionHeader icon={GraduationCap} title="Education" />
+            <p style={{ fontSize: "15px", color: "#334155" }}>{profile.education}</p>
           </div>
 
-          
-          <div style={{
-            background: "white",
-            borderRadius: "16px",
-            padding: "30px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-            border: "1px solid #e2e8f0",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
-              <Award size={20} color="#8b5cf6" />
-              <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#0f172a" }}>
-                Skills
-              </h3>
-            </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
-              {profile.skills.map((skill, index) => (
-                <span
-                  key={index}
-                  style={{
-                    background: "#f3e8ff",
-                    color: "#8b5cf6",
-                    padding: "8px 16px",
-                    borderRadius: "20px",
-                    fontSize: "14px",
-                    fontWeight: "500",
-                  }}
-                >
+          {/* Skills */}
+          <div style={sectionStyle}>
+            <SectionHeader icon={Award} title="Skills" />
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+              {(isEditing ? editedProfile.skills : profile.skills).map((skill, idx) => (
+                <span key={idx} style={{
+                  background: "#e6f7f5",
+                  color: "rgb(20, 184, 166)",
+                  padding: "6px 14px",
+                  borderRadius: "20px",
+                  fontSize: "13px",
+                  fontWeight: "500",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                }}>
                   {skill}
+                  {isEditing && (
+                    <button onClick={() => removeSkill(skill)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "#ef4444", fontSize: "14px" }}>×</button>
+                  )}
                 </span>
               ))}
               {isEditing && (
-                <button style={{
+                <button onClick={addSkill} style={{
                   background: "transparent",
-                  border: "1px dashed #8b5cf6",
-                  color: "#8b5cf6",
-                  padding: "8px 16px",
+                  border: `1px dashed rgb(20, 184, 166)`,
+                  color: "rgb(20, 184, 166)",
+                  padding: "6px 14px",
                   borderRadius: "20px",
-                  fontSize: "14px",
+                  fontSize: "13px",
                   cursor: "pointer",
                 }}>
                   + Add Skill
@@ -278,5 +231,12 @@ const CandidateProfile = () => {
   );
 };
 
-export default CandidateProfile; 
+// Helper Component for Info Rows
+const InfoRow = ({ icon: Icon, text }) => (
+  <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
+    <Icon size={16} color="#94a3b8" />
+    <span style={{ fontSize: "14px", color: "#475569" }}>{text}</span>
+  </div>
+);
 
+export default CandidateProfile;

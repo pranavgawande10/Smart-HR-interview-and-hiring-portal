@@ -29,95 +29,41 @@ const Jobposting = () => {
         {
           id: `${COMPANY_INFO.id}-software-engineer`,
           company: COMPANY_INFO.name,
-          post: "Software Engineer",
-          tag1: "Full Time",
-          tag2: "Junior Level",
+          title: "Software Engineer",
+          vacancies: 3,
           datePosted: "2 days ago",
-          pay: "4,500/hour",
+          salary: "4,500/hour",
           location: "Mumbai, India",
           brandLogo: COMPANY_INFO.logo,
-          employmentType: "Full Time",
-          experienceLevel: "Junior Level",
           description: `We are looking for a passionate Software Engineer to join our dynamic team at ${COMPANY_INFO.name}.`,
-          responsibilities: [
-            "Design, develop, and maintain scalable software solutions",
-            "Collaborate with cross-functional teams",
-            "Write clean, maintainable code"
-          ],
-          requirements: [
-            "Bachelor's degree in Computer Science",
-            "1-3 years of experience",
-            "Strong proficiency in JavaScript"
-          ],
-          skills: ["React", "JavaScript", "Node.js"],
-          benefits: [
-            "Competitive salary",
-            "Health insurance",
-            "Flexible work hours"
-          ],
-          about: `${COMPANY_INFO.name} is a hub of innovation.`
+          skillsRequired: ["React", "JavaScript", "Node.js"],
+          isExpired: true
         },
         {
           id: `${COMPANY_INFO.id}-backend-developer`,
           company: COMPANY_INFO.name,
-          post: "Backend Developer",
-          tag1: "Full Time",
-          tag2: "Mid Level",
+          title: "Backend Developer",
+          vacancies: 2,
           datePosted: "1 day ago",
-          pay: "5,000/hour",
+          salary: "5,000/hour",
           location: "Hyderabad, India",
           brandLogo: COMPANY_INFO.logo,
-          employmentType: "Full Time",
-          experienceLevel: "Mid Level",
           description: `${COMPANY_INFO.name} is seeking a talented Backend Developer.`,
-          responsibilities: [
-            "Design and implement RESTful APIs",
-            "Optimize application performance",
-            "Database design and management"
-          ],
-          requirements: [
-            "3-5 years of experience",
-            "Proficiency in Java or Python",
-            "Experience with SQL databases"
-          ],
-          skills: ["Java", "Python", "Node.js", "PostgreSQL"],
-          benefits: [
-            "Competitive salary",
-            "Health benefits",
-            "Learning budget"
-          ],
-          about: `${COMPANY_INFO.name} Development Center.`
+          skillsRequired: ["Java", "Python", "Node.js", "PostgreSQL"],
+          isExpired: false
         },
         {
           id: `${COMPANY_INFO.id}-frontend-developer`,
           company: COMPANY_INFO.name,
-          post: "Frontend Developer",
-          tag1: "Full Time",
-          tag2: "Senior Level",
+          title: "Frontend Developer",
+          vacancies: 5,
           datePosted: "3 days ago",
-          pay: "6,000/hour",
+          salary: "6,000/hour",
           location: "Bangalore, India",
           brandLogo: COMPANY_INFO.logo,
-          employmentType: "Full Time",
-          experienceLevel: "Senior Level",
           description: `${COMPANY_INFO.name} is looking for a Senior Frontend Developer.`,
-          responsibilities: [
-            "Lead frontend architecture",
-            "Mentor junior developers",
-            "Implement responsive designs"
-          ],
-          requirements: [
-            "5+ years of experience",
-            "Expert knowledge of React",
-            "Experience with state management"
-          ],
-          skills: ["React", "TypeScript", "Next.js", "Tailwind CSS"],
-          benefits: [
-            "Stock options",
-            "Premium health coverage",
-            "Remote work options"
-          ],
-          about: `${COMPANY_INFO.name} Innovation Center.`
+          skillsRequired: ["React", "TypeScript", "Next.js", "Tailwind CSS"],
+          isExpired: false
         }
       ];
       setJobs(defaultJobs);
@@ -140,7 +86,7 @@ const Jobposting = () => {
 
   // Filter jobs - only by role since company is always the same
   const filteredJobs = jobs.filter((job) =>
-    job.post.toLowerCase().includes(search.toLowerCase())
+    (job.title || job.post || "").toLowerCase().includes(search.toLowerCase())
   );
 
   const handleAddNewJob = () => {
@@ -149,7 +95,7 @@ const Jobposting = () => {
 
   const handleSaveJob = (newJob) => {
     // Create a URL-friendly ID with company name
-    const jobId = `${COMPANY_INFO.id}-${newJob.post.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
+    const jobId = `${COMPANY_INFO.id}-${newJob.title.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
     
     // Set date posted to current time
     const datePosted = "Just now";
@@ -160,7 +106,8 @@ const Jobposting = () => {
       company: COMPANY_INFO.name,
       brandLogo: COMPANY_INFO.logo,
       id: jobId,
-      datePosted: datePosted
+      datePosted: datePosted,
+      isExpired: false
     };
     
     // Add the new job to the list

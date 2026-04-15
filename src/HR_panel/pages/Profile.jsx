@@ -1,27 +1,7 @@
 // Profile.jsx
 import { useState, useEffect } from "react";
 import { 
-  User, 
-  Mail, 
-  Phone, 
-  Building, 
-  MapPin, 
-  Calendar, 
-  Edit2, 
-  Save, 
-  X,
-  Camera,
-  Briefcase,
-  Globe,
-  Linkedin,
-  Twitter,
-  Github,
-  Shield,
-  Bell,
-  Lock,
-  LogOut,
-  CheckCircle,
-  AlertCircle
+  User, Mail,Phone,Building,MapPin,Calendar,Edit2,Save,X,Camera,Briefcase,Globe,Shield,Bell,Lock,LogOut,CheckCircle,AlertCircle
 } from "lucide-react";
 import PageHeader from "../components/PageHeader";
 
@@ -40,11 +20,7 @@ const Profile = () => {
     employeeId: "HR001",
     bio: "Experienced HR professional with 8+ years in talent acquisition and employee relations. Passionate about building great teams and fostering positive workplace culture.",
     avatar: "https://ui-avatars.com/api/?background=0D9488&color=fff&size=100&name=Alex+Morgan",
-    socialLinks: {
-      linkedin: "https://linkedin.com/in/alexmorgan",
-      twitter: "https://twitter.com/alexmorgan",
-      github: "https://github.com/alexmorgan"
-    },
+  
     notifications: {
       email: true,
       push: true,
@@ -54,7 +30,9 @@ const Profile = () => {
       language: "English",
       timezone: "IST (UTC+5:30)",
       dateFormat: "DD/MM/YYYY"
-    }
+    },
+    availability: true,
+    maxInterviews: 5
   });
 
   const [formData, setFormData] = useState(profile);
@@ -88,12 +66,6 @@ const Profile = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSocialChange = (platform, value) => {
-    setFormData(prev => ({
-      ...prev,
-      socialLinks: { ...prev.socialLinks, [platform]: value }
-    }));
-  };
 
   const handleNotificationChange = (type) => {
     setFormData(prev => ({
@@ -247,23 +219,6 @@ const Profile = () => {
 
             {/* Social Links */}
             <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "16px", marginTop: "16px" }}>
-              <div style={{ display: "flex", justifyContent: "center", gap: "16px" }}>
-                {formData.socialLinks.linkedin && (
-                  <a href={formData.socialLinks.linkedin} target="_blank" rel="noopener noreferrer" style={{ color: "#0a66c2" }}>
-                    <Linkedin size={20} />
-                  </a>
-                )}
-                {formData.socialLinks.twitter && (
-                  <a href={formData.socialLinks.twitter} target="_blank" rel="noopener noreferrer" style={{ color: "#1da1f2" }}>
-                    <Twitter size={20} />
-                  </a>
-                )}
-                {formData.socialLinks.github && (
-                  <a href={formData.socialLinks.github} target="_blank" rel="noopener noreferrer" style={{ color: "#333" }}>
-                    <Github size={20} />
-                  </a>
-                )}
-              </div>
             </div>
           </div>
 
@@ -521,31 +476,59 @@ const Profile = () => {
                     <p style={{ color: "#0f172a", fontSize: "14px" }}>{profile.location}</p>
                   )}
                 </div>
-              </div>
-            </div>
 
-            {/* Social Links */}
-            <div style={{ marginBottom: "24px" }}>
-              <h3 style={{ fontSize: "16px", fontWeight: "600", color: "#0f172a", marginBottom: "16px", paddingBottom: "8px", borderBottom: "1px solid #e2e8f0" }}>
-                Social Links
-              </h3>
-              <div style={{ display: "grid", gap: "16px" }}>
+                {/* New Capacity Field */}
                 <div>
                   <label style={{ display: "block", fontSize: "13px", fontWeight: "500", color: "#475569", marginBottom: "4px" }}>
-                    LinkedIn
+                    Maximum Interview Capacity
                   </label>
                   {isEditing ? (
                     <input
-                      type="url"
-                      value={formData.socialLinks.linkedin}
-                      onChange={(e) => handleSocialChange("linkedin", e.target.value)}
-                      placeholder="https://linkedin.com/in/username"
+                      type="number"
+                      name="maxInterviews"
+                      min="1"
+                      value={formData.maxInterviews}
+                      onChange={handleChange}
                       style={{ width: "100%", padding: "10px", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "14px" }}
                     />
                   ) : (
-                    <p style={{ color: "#0f172a", fontSize: "14px" }}>{profile.socialLinks.linkedin || "Not provided"}</p>
+                    <p style={{ color: "#0f172a", fontSize: "14px" }}>{profile.maxInterviews}</p>
                   )}
                 </div>
+              </div>
+            </div>
+
+            {/* Availability Toggle */}
+            <div style={{ marginBottom: "24px", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px", background: "#f8fafc", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+              <div>
+                <h3 style={{ fontSize: "15px", fontWeight: "600", color: "#0f172a", margin: "0 0 4px 0" }}>Availability</h3>
+                <p style={{ fontSize: "13px", color: "#64748b", margin: 0 }}>Set your current status for interviews</p>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <span style={{ fontSize: "14px", fontWeight: "500", color: formData.availability ? "#059669" : "#dc2626" }}>
+                  {formData.availability ? "Available" : "Not Available"}
+                </span>
+                {isEditing && (
+                  <label style={{ position: "relative", display: "inline-block", width: "44px", height: "24px" }}>
+                    <input
+                      type="checkbox"
+                      checked={formData.availability}
+                      onChange={(e) => setFormData(prev => ({ ...prev, availability: e.target.checked }))}
+                      style={{ opacity: 0, width: 0, height: 0 }}
+                    />
+                    <span style={{
+                      position: "absolute", cursor: "pointer", top: 0, left: 0, right: 0, bottom: 0,
+                      backgroundColor: formData.availability ? "rgb(20, 184, 166)" : "#cbd5e1",
+                      transition: ".4s", borderRadius: "24px"
+                    }}>
+                      <span style={{
+                        position: "absolute", content: '""', height: "18px", width: "18px", left: "3px", bottom: "3px",
+                        backgroundColor: "white", transition: ".4s", borderRadius: "50%",
+                        transform: formData.availability ? "translateX(20px)" : "translateX(0)"
+                      }}></span>
+                    </span>
+                  </label>
+                )}
               </div>
             </div>
 

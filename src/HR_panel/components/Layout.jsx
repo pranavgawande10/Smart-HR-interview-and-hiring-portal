@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Sidebar from "./Sidebar";
+import Navbar from "./Navbar";
 import { Outlet } from "react-router-dom";
 import Footer from "./Footer";
 
@@ -30,6 +31,7 @@ const Layout = () => {
     <div style={layoutStyle}>
       <Sidebar onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
       <div style={contentStyle}>
+        <Navbar />
         <div style={mainStyle}>
           <Outlet />
         </div>

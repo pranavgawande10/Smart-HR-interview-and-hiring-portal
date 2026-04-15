@@ -3,22 +3,11 @@ import { X } from "lucide-react";
 
 const AddJobForm = ({ onClose, onSave }) => {
   const [formData, setFormData] = useState({
-    company: "",
-    post: "",
-    tag1: "Full Time",
-    tag2: "Junior Level",
-    datePosted: "Just now",
-    pay: "",
-    location: "",
-    brandLogo: "https://img.icons8.com/color/48/company.png", // Default logo
-    employmentType: "Full Time",
-    experienceLevel: "Junior Level",
+    title: "",
     description: "",
-    responsibilities: [""],
-    requirements: [""],
-    skills: [""],
-    benefits: [""],
-    about: "",
+    location: "",
+    vacancies: 1,
+    skillsrequired: [""],
   });
 
   const handleChange = (e) => {
@@ -26,19 +15,19 @@ const AddJobForm = ({ onClose, onSave }) => {
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleArrayChange = (index, field, value) => {
-    const newArray = [...formData[field]];
+  const handleArrayChange = (index, value) => {
+    const newArray = [...formData.skillsrequired];
     newArray[index] = value;
-    setFormData({ ...formData, [field]: newArray });
+    setFormData({ ...formData, skillsrequired: newArray });
   };
 
-  const addArrayItem = (field) => {
-    setFormData({ ...formData, [field]: [...formData[field], ""] });
+  const addArrayItem = () => {
+    setFormData({ ...formData, skillsrequired: [...formData.skillsrequired, ""] });
   };
 
-  const removeArrayItem = (field, index) => {
-    const newArray = formData[field].filter((_, i) => i !== index);
-    setFormData({ ...formData, [field]: newArray });
+  const removeArrayItem = (index) => {
+    const newArray = formData.skillsrequired.filter((_, i) => i !== index);
+    setFormData({ ...formData, skillsrequired: newArray });
   };
 
   const handleSubmit = (e) => {
@@ -47,10 +36,7 @@ const AddJobForm = ({ onClose, onSave }) => {
     // Filter out empty items from arrays
     const cleanedData = {
       ...formData,
-      responsibilities: formData.responsibilities.filter(item => item.trim() !== ""),
-      requirements: formData.requirements.filter(item => item.trim() !== ""),
-      skills: formData.skills.filter(item => item.trim() !== ""),
-      benefits: formData.benefits.filter(item => item.trim() !== ""),
+      skillsrequired: formData.skillsrequired.filter(item => item.trim() !== ""),
     };
     
     onSave(cleanedData);
@@ -116,40 +102,21 @@ const AddJobForm = ({ onClose, onSave }) => {
           {/* Basic Information */}
           <div style={{ marginBottom: "30px" }}>
             <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#0f172a", marginBottom: "20px", paddingBottom: "10px", borderBottom: "1px solid #e2e8f0" }}>
-              Basic Information
+              Job Details
             </h3>
             
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" }}>
-              <div>
-                <label style={{ display: "block", fontSize: "14px", fontWeight: "500", color: "#4b5563", marginBottom: "6px" }}>
-                  Company Name *
-                </label>
-                <input
-                  type="text"
-                  name="company"
-                  value={formData.company}
-                  onChange={handleChange}
-                  required
-                  style={{
-                    width: "100%",
-                    padding: "12px",
-                    border: "1px solid #e2e8f0",
-                    borderRadius: "8px",
-                    fontSize: "14px",
-                    outline: "none",
-                  }}
-                />
-              </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "20px", marginBottom: "20px" }}>
               <div>
                 <label style={{ display: "block", fontSize: "14px", fontWeight: "500", color: "#4b5563", marginBottom: "6px" }}>
                   Job Title *
                 </label>
                 <input
                   type="text"
-                  name="post"
-                  value={formData.post}
+                  name="title"
+                  value={formData.title}
                   onChange={handleChange}
                   required
+                  placeholder="e.g., Software Engineer"
                   style={{
                     width: "100%",
                     padding: "12px",
@@ -162,7 +129,32 @@ const AddJobForm = ({ onClose, onSave }) => {
               </div>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "20px", marginBottom: "20px" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "14px", fontWeight: "500", color: "#4b5563", marginBottom: "6px" }}>
+                  Description *
+                </label>
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  required
+                  rows="4"
+                  placeholder="Detailed job description..."
+                  style={{
+                    width: "100%",
+                    padding: "12px",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "8px",
+                    fontSize: "14px",
+                    outline: "none",
+                    fontFamily: "inherit",
+                  }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "20px", marginBottom: "20px" }}>
               <div>
                 <label style={{ display: "block", fontSize: "14px", fontWeight: "500", color: "#4b5563", marginBottom: "6px" }}>
                   Location *
@@ -173,7 +165,7 @@ const AddJobForm = ({ onClose, onSave }) => {
                   value={formData.location}
                   onChange={handleChange}
                   required
-                  placeholder="e.g., Mumbai, India"
+                  placeholder="e.g., Mumbai, India or Remote"
                   style={{
                     width: "100%",
                     padding: "12px",
@@ -184,17 +176,20 @@ const AddJobForm = ({ onClose, onSave }) => {
                   }}
                 />
               </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "20px", marginBottom: "20px" }}>
               <div>
                 <label style={{ display: "block", fontSize: "14px", fontWeight: "500", color: "#4b5563", marginBottom: "6px" }}>
-                  Salary *
+                  Vacancies *
                 </label>
                 <input
-                  type="text"
-                  name="pay"
-                  value={formData.pay}
+                  type="number"
+                  name="vacancies"
+                  value={formData.vacancies}
                   onChange={handleChange}
                   required
-                  placeholder="e.g., 4,500/hour"
+                  min="1"
                   style={{
                     width: "100%",
                     padding: "12px",
@@ -207,329 +202,61 @@ const AddJobForm = ({ onClose, onSave }) => {
               </div>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-              <div>
-                <label style={{ display: "block", fontSize: "14px", fontWeight: "500", color: "#4b5563", marginBottom: "6px" }}>
-                  Job Type
-                </label>
-                <select
-                  name="tag1"
-                  value={formData.tag1}
-                  onChange={handleChange}
-                  style={{
-                    width: "100%",
-                    padding: "12px",
-                    border: "1px solid #e2e8f0",
-                    borderRadius: "8px",
-                    fontSize: "14px",
-                    outline: "none",
-                    background: "white",
-                  }}
-                >
-                  <option>Full Time</option>
-                  <option>Part Time</option>
-                  <option>Contract</option>
-                  <option>Internship</option>
-                  <option>Remote</option>
-                  <option>Hybrid</option>
-                </select>
-              </div>
-              <div>
-                <label style={{ display: "block", fontSize: "14px", fontWeight: "500", color: "#4b5563", marginBottom: "6px" }}>
-                  Experience Level
-                </label>
-                <select
-                  name="tag2"
-                  value={formData.tag2}
-                  onChange={handleChange}
-                  style={{
-                    width: "100%",
-                    padding: "12px",
-                    border: "1px solid #e2e8f0",
-                    borderRadius: "8px",
-                    fontSize: "14px",
-                    outline: "none",
-                    background: "white",
-                  }}
-                >
-                  <option>Junior Level</option>
-                  <option>Mid Level</option>
-                  <option>Senior Level</option>
-                  <option>Lead</option>
-                  <option>Manager</option>
-                </select>
-              </div>
+            {/* Skills Required */}
+            <div style={{ marginBottom: "30px" }}>
+              <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#0f172a", marginBottom: "20px", paddingBottom: "10px", borderBottom: "1px solid #e2e8f0" }}>
+                Skills Required
+              </h3>
+              {formData.skillsrequired.map((item, index) => (
+                <div key={index} style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
+                  <input
+                    type="text"
+                    value={item}
+                    onChange={(e) => handleArrayChange(index, e.target.value)}
+                    style={{
+                      flex: "1",
+                      padding: "10px",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "6px",
+                      fontSize: "14px",
+                    }}
+                    placeholder={`Skill ${index + 1}`}
+                  />
+                  {formData.skillsrequired.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeArrayItem(index)}
+                      style={{
+                        background: "#fee2e2",
+                        color: "#ef4444",
+                        border: "none",
+                        borderRadius: "6px",
+                        padding: "0 12px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addArrayItem}
+                style={{
+                  background: "transparent",
+                  color: "rgb(20, 184, 166)",
+                  border: "1px dashed rgb(20, 184, 166)",
+                  borderRadius: "6px",
+                  padding: "8px 16px",
+                  fontSize: "14px",
+                  cursor: "pointer",
+                  marginTop: "10px",
+                }}
+              >
+                + Add Skill
+              </button>
             </div>
-          </div>
-
-          {/* Description */}
-          <div style={{ marginBottom: "30px" }}>
-            <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#0f172a", marginBottom: "20px", paddingBottom: "10px", borderBottom: "1px solid #e2e8f0" }}>
-              Job Description
-            </h3>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              rows="4"
-              style={{
-                width: "100%",
-                padding: "12px",
-                border: "1px solid #e2e8f0",
-                borderRadius: "8px",
-                fontSize: "14px",
-                outline: "none",
-                fontFamily: "inherit",
-              }}
-              placeholder="Describe the job role and responsibilities..."
-            />
-          </div>
-
-          {/* Responsibilities */}
-          <div style={{ marginBottom: "30px" }}>
-            <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#0f172a", marginBottom: "20px", paddingBottom: "10px", borderBottom: "1px solid #e2e8f0" }}>
-              Responsibilities
-            </h3>
-            {formData.responsibilities.map((item, index) => (
-              <div key={index} style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
-                <input
-                  type="text"
-                  value={item}
-                  onChange={(e) => handleArrayChange(index, "responsibilities", e.target.value)}
-                  style={{
-                    flex: "1",
-                    padding: "10px",
-                    border: "1px solid #e2e8f0",
-                    borderRadius: "6px",
-                    fontSize: "14px",
-                  }}
-                  placeholder={`Responsibility ${index + 1}`}
-                />
-                {formData.responsibilities.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeArrayItem("responsibilities", index)}
-                    style={{
-                      background: "#fee2e2",
-                      color: "#ef4444",
-                      border: "none",
-                      borderRadius: "6px",
-                      padding: "0 12px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={() => addArrayItem("responsibilities")}
-              style={{
-                background: "transparent",
-                color: "rgb(20, 184, 166)",
-                border: "1px dashed rgb(20, 184, 166)",
-                borderRadius: "6px",
-                padding: "8px 16px",
-                fontSize: "14px",
-                cursor: "pointer",
-                marginTop: "10px",
-              }}
-            >
-              + Add Responsibility
-            </button>
-          </div>
-
-          {/* Requirements */}
-          <div style={{ marginBottom: "30px" }}>
-            <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#0f172a", marginBottom: "20px", paddingBottom: "10px", borderBottom: "1px solid #e2e8f0" }}>
-              Requirements
-            </h3>
-            {formData.requirements.map((item, index) => (
-              <div key={index} style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
-                <input
-                  type="text"
-                  value={item}
-                  onChange={(e) => handleArrayChange(index, "requirements", e.target.value)}
-                  style={{
-                    flex: "1",
-                    padding: "10px",
-                    border: "1px solid #e2e8f0",
-                    borderRadius: "6px",
-                    fontSize: "14px",
-                  }}
-                  placeholder={`Requirement ${index + 1}`}
-                />
-                {formData.requirements.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeArrayItem("requirements", index)}
-                    style={{
-                      background: "#fee2e2",
-                      color: "#ef4444",
-                      border: "none",
-                      borderRadius: "6px",
-                      padding: "0 12px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={() => addArrayItem("requirements")}
-              style={{
-                background: "transparent",
-                color: "rgb(20, 184, 166)",
-                border: "1px dashed rgb(20, 184, 166)",
-                borderRadius: "6px",
-                padding: "8px 16px",
-                fontSize: "14px",
-                cursor: "pointer",
-                marginTop: "10px",
-              }}
-            >
-              + Add Requirement
-            </button>
-          </div>
-
-          {/* Skills */}
-          <div style={{ marginBottom: "30px" }}>
-            <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#0f172a", marginBottom: "20px", paddingBottom: "10px", borderBottom: "1px solid #e2e8f0" }}>
-              Skills
-            </h3>
-            {formData.skills.map((item, index) => (
-              <div key={index} style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
-                <input
-                  type="text"
-                  value={item}
-                  onChange={(e) => handleArrayChange(index, "skills", e.target.value)}
-                  style={{
-                    flex: "1",
-                    padding: "10px",
-                    border: "1px solid #e2e8f0",
-                    borderRadius: "6px",
-                    fontSize: "14px",
-                  }}
-                  placeholder={`Skill ${index + 1}`}
-                />
-                {formData.skills.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeArrayItem("skills", index)}
-                    style={{
-                      background: "#fee2e2",
-                      color: "#ef4444",
-                      border: "none",
-                      borderRadius: "6px",
-                      padding: "0 12px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={() => addArrayItem("skills")}
-              style={{
-                background: "transparent",
-                color: "rgb(20, 184, 166)",
-                border: "1px dashed rgb(20, 184, 166)",
-                borderRadius: "6px",
-                padding: "8px 16px",
-                fontSize: "14px",
-                cursor: "pointer",
-                marginTop: "10px",
-              }}
-            >
-              + Add Skill
-            </button>
-          </div>
-
-          {/* Benefits */}
-          <div style={{ marginBottom: "30px" }}>
-            <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#0f172a", marginBottom: "20px", paddingBottom: "10px", borderBottom: "1px solid #e2e8f0" }}>
-              Benefits
-            </h3>
-            {formData.benefits.map((item, index) => (
-              <div key={index} style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
-                <input
-                  type="text"
-                  value={item}
-                  onChange={(e) => handleArrayChange(index, "benefits", e.target.value)}
-                  style={{
-                    flex: "1",
-                    padding: "10px",
-                    border: "1px solid #e2e8f0",
-                    borderRadius: "6px",
-                    fontSize: "14px",
-                  }}
-                  placeholder={`Benefit ${index + 1}`}
-                />
-                {formData.benefits.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeArrayItem("benefits", index)}
-                    style={{
-                      background: "#fee2e2",
-                      color: "#ef4444",
-                      border: "none",
-                      borderRadius: "6px",
-                      padding: "0 12px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={() => addArrayItem("benefits")}
-              style={{
-                background: "transparent",
-                color: "rgb(20, 184, 166)",
-                border: "1px dashed rgb(20, 184, 166)",
-                borderRadius: "6px",
-                padding: "8px 16px",
-                fontSize: "14px",
-                cursor: "pointer",
-                marginTop: "10px",
-              }}
-            >
-              + Add Benefit
-            </button>
-          </div>
-
-          {/* About Company */}
-          <div style={{ marginBottom: "30px" }}>
-            <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#0f172a", marginBottom: "20px", paddingBottom: "10px", borderBottom: "1px solid #e2e8f0" }}>
-              About Company
-            </h3>
-            <textarea
-              name="about"
-              value={formData.about}
-              onChange={handleChange}
-              rows="3"
-              style={{
-                width: "100%",
-                padding: "12px",
-                border: "1px solid #e2e8f0",
-                borderRadius: "8px",
-                fontSize: "14px",
-                outline: "none",
-                fontFamily: "inherit",
-              }}
-              placeholder="Tell us about your company..."
-            />
           </div>
 
           {/* Form Buttons */}

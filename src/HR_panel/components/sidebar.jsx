@@ -172,7 +172,7 @@ const Sidebar = () => {
             overflow: "hidden",
             textOverflow: "ellipsis",
           }}>
-            Alex Johnson
+            Anushka Jannawar
           </p>
           <p style={{ 
             margin: "2px 0 0 0", 
@@ -182,7 +182,7 @@ const Sidebar = () => {
             overflow: "hidden",
             textOverflow: "ellipsis",
           }}>
-            HR Manager
+           Senior HR Manager
           </p>
         </div>
       </div>

@@ -1,513 +1,522 @@
-// Applicants.jsx
 import { useState, useEffect } from "react";
-import { Search, Filter, Download, Eye, Calendar, Mail, Phone, MapPin, Briefcase } from "lucide-react";
-import PageHeader from "../components/PageHeader";
+import { FileText, ChevronDown } from "lucide-react";
 
 const Applicants = () => {
+  const [jobs, setJobs] = useState([]);
   const [applicants, setApplicants] = useState([]);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [selectedApplicant, setSelectedApplicant] = useState(null);
-  const [showModal, setShowModal] = useState(false);
+  const [interviewers, setInterviewers] = useState([]);
+  const [activeTabs, setActiveTabs] = useState({}); // { jobId: "total" | "shortlisted" }
+  
+  // Modals state
+  const [roundModalOpen, setRoundModalOpen] = useState(false);
+  const [selectedApplicantForRound, setSelectedApplicantForRound] = useState(null);
+  const [roundData, setRoundData] = useState({ roundName: "", isFinalRound: false });
 
-  // Load applicants from localStorage
+  // Load data
   useEffect(() => {
-    const savedApplicants = localStorage.getItem("jobApplications");
-    if (savedApplicants) {
-      setApplicants(JSON.parse(savedApplicants));
-    } else {
-      // Sample applicants data
-      const sampleApplicants = [
-        {
-          id: 1,
-          name: "Sarah Johnson",
-          email: "sarah.johnson@email.com",
-          phone: "+91 98765 43210",
-          role: "Frontend Developer",
-          jobId: "techcorp-software-engineer",
-          appliedDate: "2024-03-15",
-          status: "interview",
-          experience: "3 years",
-          location: "Mumbai, India",
-          coverLetter: "I'm passionate about creating beautiful and responsive web applications...",
-          resumeUrl: "sarah_johnson_resume.pdf"
-        },
-        {
-          id: 2,
-          name: "Michael Chen",
-          email: "michael.chen@email.com",
-          phone: "+91 87654 32109",
-          role: "Backend Developer",
-          jobId: "techcorp-backend-developer",
-          appliedDate: "2024-03-14",
-          status: "pending",
-          experience: "4 years",
-          location: "Bangalore, India",
-          coverLetter: "Experienced backend developer with expertise in Node.js and Python...",
-          resumeUrl: "michael_chen_resume.pdf"
-        },
-        {
-          id: 3,
-          name: "Priya Sharma",
-          email: "priya.sharma@email.com",
-          phone: "+91 76543 21098",
-          role: "Frontend Developer",
-          jobId: "techcorp-software-engineer",
-          appliedDate: "2024-03-13",
-          status: "reviewed",
-          experience: "2 years",
-          location: "Pune, India",
-          coverLetter: "Creative frontend developer with strong React skills...",
-          resumeUrl: "priya_sharma_resume.pdf"
-        },
-        {
-          id: 4,
-          name: "Alex Thompson",
-          email: "alex.thompson@email.com",
-          phone: "+91 65432 10987",
-          role: "Full Stack Developer",
-          jobId: "techcorp-fullstack-developer",
-          appliedDate: "2024-03-12",
-          status: "rejected",
-          experience: "5 years",
-          location: "Hyderabad, India",
-          coverLetter: "Full stack developer with experience in MERN stack...",
-          resumeUrl: "alex_thompson_resume.pdf"
-        },
-        {
-          id: 5,
-          name: "Ananya Reddy",
-          email: "ananya.reddy@email.com",
-          phone: "+91 54321 09876",
-          role: "UI/UX Designer",
-          jobId: "techcorp-ui-designer",
-          appliedDate: "2024-03-11",
-          status: "hired",
-          experience: "6 years",
-          location: "Chennai, India",
-          coverLetter: "Award-winning UI/UX designer with 6+ years of experience...",
-          resumeUrl: "ananya_reddy_resume.pdf"
-        }
-      ];
-      setApplicants(sampleApplicants);
-      localStorage.setItem("jobApplications", JSON.stringify(sampleApplicants));
-    }
+    // 2 Dummy Job Postings as requested
+    const sampleJobs = [
+      {
+        id: "job1",
+        title: "Senior Product Designer",
+        company: "Google",
+        location: "San Francisco, CA",
+        vacancies: 2
+      },
+      {
+        id: "job2",
+        title: "Full Stack Engineer",
+        company: "Microsoft",
+        location: "Seattle, WA",
+        vacancies: 5
+      }
+    ];
+    setJobs(sampleJobs);
+
+    // Dummy applicants (2-3 per job)
+    const sampleApplicants = [
+      {
+        id: 1,
+        name: "Sarah Johnson",
+        jobId: "job1",
+        status: "pending",
+        resumeUrl: "#",
+        rounds: [],
+        assignedInterviewerId: null
+      },
+      {
+        id: 2,
+        name: "Michael Chen",
+        jobId: "job1",
+        status: "Shortlisted",
+        resumeUrl: "#",
+        rounds: [{ roundName: "Technical Screen", isFinalRound: false }],
+        assignedInterviewerId: 1
+      },
+      {
+        id: 3,
+        name: "Elena Rodriguez",
+        jobId: "job1",
+        status: "Rejected",
+        resumeUrl: "#",
+        rounds: [],
+        assignedInterviewerId: null
+      },
+      {
+        id: 4,
+        name: "James Wilson",
+        jobId: "job2",
+        status: "pending",
+        resumeUrl: "#",
+        rounds: [],
+        assignedInterviewerId: null
+      },
+      {
+        id: 5,
+        name: "Emily Davis",
+        jobId: "job2",
+        status: "Shortlisted",
+        resumeUrl: "#",
+        rounds: [{ roundName: "Behavioral Round", isFinalRound: false }, { roundName: "System Design", isFinalRound: true }],
+        assignedInterviewerId: 2
+      }
+    ];
+    setApplicants(sampleApplicants);
+
+    // Sample interviewers
+    const sampleInterviewers = [
+      { id: 1, name: "John Doe", role: "Senior Technical Interviewer" },
+      { id: 2, name: "Jane Smith", role: "HR Interviewer" }
+    ];
+    setInterviewers(sampleInterviewers);
   }, []);
 
-  // Update status function
-  const updateStatus = (applicantId, newStatus) => {
-    const updatedApplicants = applicants.map(applicant =>
-      applicant.id === applicantId ? { ...applicant, status: newStatus } : applicant
+  // Helpers
+  const handleTabChange = (jobId, tab) => {
+    setActiveTabs(prev => ({ ...prev, [jobId]: tab }));
+  };
+
+  const updateApplicantStatus = (applicantId, newStatus) => {
+    const updated = applicants.map(app => 
+      app.id === applicantId ? { ...app, status: newStatus } : app
     );
-    setApplicants(updatedApplicants);
-    localStorage.setItem("jobApplications", JSON.stringify(updatedApplicants));
+    setApplicants(updated);
   };
 
-  // Filter applicants based on search and status
-  const filteredApplicants = applicants.filter(applicant => {
-    const matchesSearch = applicant.name.toLowerCase().includes(search.toLowerCase()) ||
-                          applicant.role.toLowerCase().includes(search.toLowerCase()) ||
-                          applicant.email.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === "all" || applicant.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
-
-  // Get status badge style
-  const getStatusBadge = (status) => {
-    const statusConfig = {
-      pending: { color: "#f59e0b", bg: "#fef3c7", label: "Pending Review" },
-      reviewed: { color: "#3b82f6", bg: "#dbeafe", label: "Reviewed" },
-      interview: { color: "#8b5cf6", bg: "#ede9fe", label: "Interview" },
-      hired: { color: "#10b981", bg: "#d1fae5", label: "Hired" },
-      rejected: { color: "#ef4444", bg: "#fee2e2", label: "Rejected" }
-    };
-    const config = statusConfig[status] || statusConfig.pending;
-    return (
-      <span style={{
-        background: config.bg,
-        color: config.color,
-        padding: "6px 12px",
-        borderRadius: "20px",
-        fontSize: "12px",
-        fontWeight: "500",
-        display: "inline-block"
-      }}>
-        {config.label}
-      </span>
+  const assignInterviewer = (applicantId, interviewerId) => {
+    const updated = applicants.map(app => 
+      app.id === applicantId ? { ...app, assignedInterviewerId: interviewerId } : app
     );
+    setApplicants(updated);
   };
 
-  // Format date
-  const formatDate = (dateString) => {
-    const options = { year: 'numeric', month: 'short', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
+  const openRoundModal = (applicant) => {
+    setSelectedApplicantForRound(applicant);
+    setRoundData({ roundName: "", isFinalRound: false });
+    setRoundModalOpen(true);
   };
 
-  // Get status color for dropdown
-  const getStatusColor = (status) => {
-    const colors = {
-      pending: "#f59e0b",
-      reviewed: "#3b82f6",
-      interview: "#8b5cf6",
-      hired: "#10b981",
-      rejected: "#ef4444"
+  const handleSaveRound = () => {
+    if (!selectedApplicantForRound || !roundData.roundName) return;
+
+    const newRound = {
+      roundName: roundData.roundName,
+      isFinalRound: roundData.isFinalRound
     };
-    return colors[status] || "#6b7280";
+
+    const updated = applicants.map(app => {
+      if (app.id === selectedApplicantForRound.id) {
+        return {
+          ...app,
+          rounds: [...(app.rounds || []), newRound]
+        };
+      }
+      return app;
+    });
+
+    setApplicants(updated);
+    setRoundModalOpen(false);
   };
 
-  // Stats calculation
-  const stats = {
-    total: applicants.length,
-    pending: applicants.filter(a => a.status === "pending").length,
-    interview: applicants.filter(a => a.status === "interview").length,
-    hired: applicants.filter(a => a.status === "hired").length
+  const viewResume = (applicant) => {
+    alert(`Previewing dummy resume for ${applicant.name}... Note: In a real environment, this opens a PDF viewer in a new tab or modal.`);
   };
 
   return (
-    <div style={{ padding: "24px", maxWidth: "1400px", margin: "0 auto" }}>
+    <div style={{ padding: "20px", maxWidth: "1200px", margin: "0 auto" }}>
       
-      {/* Header */}
-      <PageHeader
-        title="Applicants"
-        subtitle="Track and manage candidate applications"
-      />
-
-      {/* Stats Cards */}
+      {/* 1. Page Heading with style matching Dashboard/Interviews */}
       <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-        gap: "20px",
-        marginBottom: "30px"
+        marginBottom: "30px",
+        padding: "25px",
+        background: "linear-gradient(135deg,  rgb(20, 184, 166) 0%, rgb(14, 165, 233) 100%)",
+        borderRadius: "16px",
+        color: "white",
+        boxShadow: "0 4px 20px rgba(102, 126, 234, 0.3)"
       }}>
-        <div style={{
-          background: "white",
-          padding: "20px",
-          borderRadius: "12px",
-          border: "1px solid #e2e8f0",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.05)"
-        }}>
-          <p style={{ color: "#64748b", fontSize: "14px", marginBottom: "8px" }}>Total Applications</p>
-          <h3 style={{ fontSize: "32px", fontWeight: "bold", color: "#0f172a", margin: 0 }}>{stats.total}</h3>
-        </div>
-        <div style={{
-          background: "white",
-          padding: "20px",
-          borderRadius: "12px",
-          border: "1px solid #e2e8f0",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.05)"
-        }}>
-          <p style={{ color: "#64748b", fontSize: "14px", marginBottom: "8px" }}>Pending Review</p>
-          <h3 style={{ fontSize: "32px", fontWeight: "bold", color: "#f59e0b", margin: 0 }}>{stats.pending}</h3>
-        </div>
-        <div style={{
-          background: "white",
-          padding: "20px",
-          borderRadius: "12px",
-          border: "1px solid #e2e8f0",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.05)"
-        }}>
-          <p style={{ color: "#64748b", fontSize: "14px", marginBottom: "8px" }}>Interview Stage</p>
-          <h3 style={{ fontSize: "32px", fontWeight: "bold", color: "#8b5cf6", margin: 0 }}>{stats.interview}</h3>
-        </div>
-        <div style={{
-          background: "white",
-          padding: "20px",
-          borderRadius: "12px",
-          border: "1px solid #e2e8f0",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.05)"
-        }}>
-          <p style={{ color: "#64748b", fontSize: "14px", marginBottom: "8px" }}>Hired</p>
-          <h3 style={{ fontSize: "32px", fontWeight: "bold", color: "#10b981", margin: 0 }}>{stats.hired}</h3>
-        </div>
+        <h1 style={{ fontSize: "28px", fontWeight: "700", marginBottom: "8px", color: "white" }}>
+          Applicants Overview
+        </h1>
+        <p style={{ fontSize: "16px", opacity: "0.9", margin: "0", color: "rgba(255, 255, 255, 0.9)" }}>
+          Manage your candidate pipeline across all active job postings.
+        </p>
       </div>
 
-      {/* Search and Filter Bar */}
-      <div style={{
-        background: "white",
-        borderRadius: "12px",
-        border: "1px solid #e2e8f0",
-        padding: "16px",
-        marginBottom: "24px",
-        display: "flex",
-        flexWrap: "wrap",
-        gap: "16px",
-        alignItems: "center",
-        justifyContent: "space-between"
-      }}>
-        <div style={{ display: "flex", gap: "12px", flex: "1", minWidth: "250px" }}>
-          <div style={{ flex: 1, position: "relative" }}>
-            <Search style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", width: "18px", height: "18px", color: "#94a3b8" }} />
-            <input
-              type="text"
-              placeholder="Search by name, role, or email..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "10px 12px 10px 38px",
-                border: "1px solid #e2e8f0",
-                borderRadius: "8px",
-                fontSize: "14px",
-                outline: "none"
-              }}
-            />
-          </div>
-          <div style={{ position: "relative", minWidth: "150px" }}>
-            <Filter style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", width: "16px", height: "16px", color: "#94a3b8" }} />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "10px 12px 10px 36px",
-                border: "1px solid #e2e8f0",
-                borderRadius: "8px",
-                fontSize: "14px",
-                outline: "none",
-                background: "white",
-                cursor: "pointer"
-              }}
-            >
-              <option value="all">All Status</option>
-              <option value="pending">Pending Review</option>
-              <option value="reviewed">Reviewed</option>
-              <option value="interview">Interview</option>
-              <option value="hired">Hired</option>
-              <option value="rejected">Rejected</option>
-            </select>
-          </div>
-        </div>
-        <button style={{
-          background: "linear-gradient(135deg, rgb(20, 184, 166) 0%, rgb(14, 165, 233) 100%)",
-          color: "white",
-          border: "none",
-          borderRadius: "8px",
-          padding: "10px 20px",
-          fontSize: "14px",
-          fontWeight: "500",
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          gap: "8px"
-        }}>
-          <Download size={16} />
-          Export Data
-        </button>
-      </div>
-
-      {/* Applicants Table */}
-      <div style={{
-        background: "white",
-        borderRadius: "12px",
-        border: "1px solid #e2e8f0",
-        overflow: "hidden",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.05)"
-      }}>
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
-                <th style={{ padding: "16px", textAlign: "left", fontSize: "13px", fontWeight: "600", color: "#475569" }}>Applicant</th>
-                <th style={{ padding: "16px", textAlign: "left", fontSize: "13px", fontWeight: "600", color: "#475569" }}>Role</th>
-                <th style={{ padding: "16px", textAlign: "left", fontSize: "13px", fontWeight: "600", color: "#475569" }}>Applied Date</th>
-                <th style={{ padding: "16px", textAlign: "left", fontSize: "13px", fontWeight: "600", color: "#475569" }}>Status</th>
-                <th style={{ padding: "16px", textAlign: "center", fontSize: "13px", fontWeight: "600", color: "#475569" }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredApplicants.map((applicant) => (
-                <tr key={applicant.id} style={{ borderBottom: "1px solid #f1f5f9", transition: "background 0.2s" }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = "#fafbfc"}
-                  onMouseLeave={(e) => e.currentTarget.style.background = "white"}
-                >
-                  <td style={{ padding: "16px" }}>
-                    <div>
-                      <div style={{ fontWeight: "600", color: "#0f172a", marginBottom: "4px" }}>{applicant.name}</div>
-                      <div style={{ fontSize: "12px", color: "#64748b", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                        <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                          <Mail size={12} /> {applicant.email}
-                        </span>
-                        <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                          <Phone size={12} /> {applicant.phone}
-                        </span>
-                      </div>
-                    </div>
-                  </td>
-                  <td style={{ padding: "16px" }}>
-                    <div>
-                      <div style={{ fontWeight: "500", color: "#0f172a", marginBottom: "4px" }}>{applicant.role}</div>
-                      <div style={{ fontSize: "12px", color: "#64748b", display: "flex", alignItems: "center", gap: "4px" }}>
-                        <Briefcase size={12} /> {applicant.experience}
-                      </div>
-                    </div>
-                  </td>
-                  <td style={{ padding: "16px", color: "#475569", fontSize: "14px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      <Calendar size={14} style={{ color: "#94a3b8" }} />
-                      {formatDate(applicant.appliedDate)}
-                    </div>
-                  </td>
-                  <td style={{ padding: "16px" }}>
-                    {getStatusBadge(applicant.status)}
-                  </td>
-                  <td style={{ padding: "16px", textAlign: "center" }}>
-                    <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
-                      <button
-                        onClick={() => {
-                          setSelectedApplicant(applicant);
-                          setShowModal(true);
-                        }}
-                        style={{
-                          background: "transparent",
-                          border: "1px solid #e2e8f0",
-                          borderRadius: "6px",
-                          padding: "6px 12px",
-                          fontSize: "12px",
-                          cursor: "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "4px",
-                          color: "#475569"
-                        }}
-                      >
-                        <Eye size={14} />
-                        View
-                      </button>
-                      <select
-                        value={applicant.status}
-                        onChange={(e) => updateStatus(applicant.id, e.target.value)}
-                        style={{
-                          padding: "6px 12px",
-                          border: "1px solid #e2e8f0",
-                          borderRadius: "6px",
-                          fontSize: "12px",
-                          background: "white",
-                          cursor: "pointer",
-                          color: getStatusColor(applicant.status)
-                        }}
-                      >
-                        <option value="pending">Pending</option>
-                        <option value="reviewed">Reviewed</option>
-                        <option value="interview">Interview</option>
-                        <option value="hired">Hired</option>
-                        <option value="rejected">Rejected</option>
-                      </select>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Empty State */}
-        {filteredApplicants.length === 0 && (
-          <div style={{ textAlign: "center", padding: "60px", color: "#64748b" }}>
-            <p style={{ fontSize: "16px" }}>No applicants found matching your criteria.</p>
+      <div style={{ display: "flex", flexDirection: "column", gap: "30px" }}>
+        {jobs.length === 0 && (
+          <div style={{ padding: "40px", textAlign: "center", background: "white", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
+            <p style={{ color: "#64748b" }}>No active job postings found. Please create a job to view applicants.</p>
           </div>
         )}
+
+        {/* 2. Job Cards with Dummy Data */}
+        {jobs.map(job => {
+          // Find applicants for this job
+          const jobApplicants = applicants.filter(app => app.jobId === job.id);
+          const totalApplicants = jobApplicants;
+          const shortlistedApplicants = jobApplicants.filter(app => app.status.toLowerCase() === "shortlisted");
+          const selectedApplicants = jobApplicants.filter(app => app.status.toLowerCase() === "selected");
+          
+          const currentTab = activeTabs[job.id] || "total"; // default to "total"
+
+          return (
+            <div key={job.id} style={{
+              background: "white",
+              borderRadius: "16px",
+              border: "1px solid #e2e8f0",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+              overflow: "hidden"
+            }}>
+              {/* Job Card Header */}
+              <div style={{
+                padding: "24px",
+                borderBottom: "1px solid #e2e8f0",
+                background: "linear-gradient(to right, #f8fafc, #ffffff)"
+              }}>
+                <h2 style={{ margin: "0 0 8px 0", fontSize: "22px", fontWeight: "700", color: "#0f172a" }}>
+                  {job.title}
+                </h2>
+                <div style={{ display: "flex", gap: "24px", fontSize: "14px", color: "#64748b" }}>
+                  <span><strong style={{ color: "#475569" }}>Company/Location:</strong> {job.company} / {job.location}</span>
+                  <span><strong style={{ color: "#475569" }}>Total Candidates Applied:</strong> {totalApplicants.length}</span>
+                </div>
+              </div>
+
+              {/* 3. Two Tabs inside each Job Card */}
+              <div style={{
+                display: "flex",
+                borderBottom: "1px solid #e2e8f0",
+                background: "#f1f5f9"
+              }}>
+                <button
+                  onClick={() => handleTabChange(job.id, "total")}
+                  style={{
+                    padding: "16px 24px",
+                    background: currentTab === "total" ? "white" : "transparent",
+                    border: "none",
+                    borderBottom: currentTab === "total" ? "2px solid rgb(20, 184, 166)" : "2px solid transparent",
+                    fontWeight: "600",
+                    color: currentTab === "total" ? "rgb(20, 184, 166)" : "#64748b",
+                    cursor: "pointer",
+                    fontSize: "15px",
+                    transition: "all 0.2s"
+                  }}
+                >
+                  Total Applicants ({totalApplicants.length})
+                </button>
+                <button
+                  onClick={() => handleTabChange(job.id, "shortlisted")}
+                  style={{
+                    padding: "16px 24px",
+                    background: currentTab === "shortlisted" ? "white" : "transparent",
+                    border: "none",
+                    borderBottom: currentTab === "shortlisted" ? "2px solid rgb(20, 184, 166)" : "2px solid transparent",
+                    fontWeight: "600",
+                    color: currentTab === "shortlisted" ? "rgb(20, 184, 166)" : "#64748b",
+                    cursor: "pointer",
+                    fontSize: "15px",
+                    transition: "all 0.2s"
+                  }}
+                >
+                  Shortlisted Candidates ({shortlistedApplicants.length})
+                </button>
+                <button
+                  onClick={() => handleTabChange(job.id, "selected")}
+                  style={{
+                    padding: "16px 24px",
+                    background: currentTab === "selected" ? "white" : "transparent",
+                    border: "none",
+                    borderBottom: currentTab === "selected" ? "2px solid rgb(20, 184, 166)" : "2px solid transparent",
+                    fontWeight: "600",
+                    color: currentTab === "selected" ? "rgb(20, 184, 166)" : "#64748b",
+                    cursor: "pointer",
+                    fontSize: "15px",
+                    transition: "all 0.2s"
+                  }}
+                >
+                  Selected Applicants ({selectedApplicants.length})
+                </button>
+              </div>
+
+              {/* Tab Content */}
+              <div style={{ padding: "0" }}>
+                
+                {/* TOTAL APPLICANTS TAB */}
+                {currentTab === "total" && (
+                  <div>
+                    {totalApplicants.length === 0 ? (
+                      <p style={{ textAlign: "center", color: "#94a3b8", padding: "20px" }}>No applicants yet.</p>
+                    ) : (
+                      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                        <thead>
+                          <tr style={{ background: "white", borderBottom: "1px solid #e2e8f0", textAlign: "left" }}>
+                            <th style={{ padding: "16px 24px", color: "#475569", fontWeight: "600", fontSize: "14px" }}>Applicant Name</th>
+                            <th style={{ padding: "16px 24px", color: "#475569", fontWeight: "600", fontSize: "14px" }}>Status</th>
+                            <th style={{ padding: "16px 24px", color: "#475569", fontWeight: "600", fontSize: "14px" }}>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {totalApplicants.map(app => (
+                            <tr key={app.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                              <td style={{ padding: "16px 24px", fontWeight: "500", color: "#0f172a" }}>{app.name}</td>
+                              <td style={{ padding: "16px 24px" }}>
+                                <span style={{
+                                  padding: "4px 10px",
+                                  borderRadius: "12px",
+                                  fontSize: "12px",
+                                  fontWeight: "500",
+                                  background: app.status.toLowerCase() === "selected" ? "#d1fae5" : app.status.toLowerCase() === "shortlisted" ? "#fef3c7" : app.status.toLowerCase() === "rejected" ? "#fee2e2" : "#f1f5f9",
+                                  color: app.status.toLowerCase() === "selected" ? "#059669" : app.status.toLowerCase() === "shortlisted" ? "#d97706" : app.status.toLowerCase() === "rejected" ? "#dc2626" : "#475569",
+                                  textTransform: "capitalize"
+                                }}>
+                                  {app.status || "Pending"}
+                                </span>
+                              </td>
+                              <td style={{ padding: "16px 24px" }}>
+                                <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                                  <button onClick={() => viewResume(app)} style={{ background: "#f1f5f9", color: "#475569", border: "none", padding: "8px 14px", borderRadius: "8px", cursor: "pointer", fontSize: "13px", fontWeight: "500", display: "flex", alignItems: "center", gap: "6px" }}>
+                                    <FileText size={16} /> View Resume
+                                  </button>
+                                  
+                                  <div style={{ position: "relative" }}>
+                                    <select 
+                                      value={app.status.toLowerCase()}
+                                      onChange={(e) => updateApplicantStatus(app.id, e.target.value)}
+                                      style={{ padding: "8px 14px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "13px", color: "#0f172a", outline: "none", cursor: "pointer", background: "white", appearance: "none", paddingRight: "30px" }}
+                                    >
+                                      <option value="pending" disabled hidden>Pending</option>
+                                      <option value="shortlisted">Shortlisted</option>
+                                      <option value="selected">Selected</option>
+                                      <option value="rejected">Rejected</option>
+                                    </select>
+                                    <ChevronDown size={14} style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "#64748b" }} />
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                )}
+
+                {/* SHORTLISTED CANDIDATES TAB */}
+                {currentTab === "shortlisted" && (
+                  <div>
+                    {shortlistedApplicants.length === 0 ? (
+                      <p style={{ textAlign: "center", color: "#94a3b8", padding: "40px" }}>No shortlisted candidates found for this job yet.</p>
+                    ) : (
+                      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                        <thead>
+                          <tr style={{ background: "#f0fdf4", borderBottom: "1px solid #e2e8f0", textAlign: "left" }}>
+                            <th style={{ padding: "16px 24px", color: "#166534", fontWeight: "600", fontSize: "14px" }}>Candidate Name</th>
+                            <th style={{ padding: "16px 24px", color: "#166534", fontWeight: "600", fontSize: "14px" }}>Level Completed</th>
+                            <th style={{ padding: "16px 24px", color: "#166534", fontWeight: "600", fontSize: "14px" }}>Assign Interviewer</th>
+                            <th style={{ padding: "16px 24px", color: "#166534", fontWeight: "600", fontSize: "14px" }}>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {shortlistedApplicants.map(app => {
+                            const completedLevel = (app.rounds && app.rounds.length > 0) 
+                              ? app.rounds[app.rounds.length - 1].roundName 
+                              : "None";
+                              
+                            return (
+                              <tr key={app.id} style={{ borderBottom: "1px solid #e2e8f0", background: "white" }}>
+                                <td style={{ padding: "16px 24px", fontWeight: "500", color: "#0f172a" }}>{app.name}</td>
+                                
+                                {/* Level Completed */}
+                                <td style={{ padding: "16px 24px" }}>
+                                  <span style={{
+                                    display: "inline-block", padding: "4px 10px", background: "#f1f5f9", 
+                                    color: "#475569", borderRadius: "12px", fontSize: "12px", fontWeight: "500"
+                                  }}>
+                                    {completedLevel}
+                                  </span>
+                                </td>
+                                
+                                {/* Assign Interviewer Dropdown */}
+                                <td style={{ padding: "16px 24px" }}>
+                                  <div style={{ position: "relative", maxWidth: "200px" }}>
+                                    <select
+                                      value={app.assignedInterviewerId || ""}
+                                      onChange={(e) => assignInterviewer(app.id, parseInt(e.target.value))}
+                                      style={{ padding: "8px 14px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "13px", width: "100%", outline: "none", cursor: "pointer", appearance: "none", paddingRight: "30px" }}
+                                    >
+                                      <option value="">Unassigned</option>
+                                      {interviewers.map(int => (
+                                        <option key={int.id} value={int.id}>{int.name}</option>
+                                      ))}
+                                    </select>
+                                    <ChevronDown size={14} style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "#64748b" }} />
+                                  </div>
+                                </td>
+                                
+                                {/* Create Round Button */}
+                                <td style={{ padding: "16px 24px" }}>
+                                  <button onClick={() => openRoundModal(app)} style={{ background: "linear-gradient(135deg, rgb(20, 184, 166) 0%, rgb(14, 165, 233) 100%)", color: "white", border: "none", padding: "8px 16px", borderRadius: "8px", cursor: "pointer", fontSize: "13px", fontWeight: "600", boxShadow: "0 2px 4px rgba(20, 184, 166, 0.2)" }}>
+                                    Create Round
+                                  </button>
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                )}
+
+                {/* SELECTED APPLICANTS TAB */}
+                {currentTab === "selected" && (
+                  <div>
+                    {selectedApplicants.length === 0 ? (
+                      <p style={{ textAlign: "center", color: "#94a3b8", padding: "40px" }}>No selected candidates found for this job yet.</p>
+                    ) : (
+                      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                        <thead>
+                          <tr style={{ background: "#f0fdf4", borderBottom: "1px solid #e2e8f0", textAlign: "left" }}>
+                            <th style={{ padding: "16px 24px", color: "#166534", fontWeight: "600", fontSize: "14px" }}>Candidate Name</th>
+                            <th style={{ padding: "16px 24px", color: "#166534", fontWeight: "600", fontSize: "14px" }}>Position</th>
+                            <th style={{ padding: "16px 24px", color: "#166534", fontWeight: "600", fontSize: "14px" }}>Status</th>
+                            <th style={{ padding: "16px 24px", color: "#166534", fontWeight: "600", fontSize: "14px" }}>Level Completed</th>
+                            <th style={{ padding: "16px 24px", color: "#166534", fontWeight: "600", fontSize: "14px" }}>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {selectedApplicants.map(app => {
+                            const completedLevel = (app.rounds && app.rounds.length > 0) 
+                              ? app.rounds[app.rounds.length - 1].roundName 
+                              : "None";
+                              
+                            return (
+                              <tr key={app.id} style={{ borderBottom: "1px solid #e2e8f0", background: "white" }}>
+                                <td style={{ padding: "16px 24px", fontWeight: "500", color: "#0f172a" }}>{app.name}</td>
+                                
+                                {/* Position */}
+                                <td style={{ padding: "16px 24px", color: "#475569" }}>
+                                  {job.title}
+                                </td>
+
+                                {/* Status */}
+                                <td style={{ padding: "16px 24px" }}>
+                                  <span style={{
+                                    padding: "4px 10px",
+                                    borderRadius: "12px",
+                                    fontSize: "12px",
+                                    fontWeight: "500",
+                                    background: "#d1fae5",
+                                    color: "#059669"
+                                  }}>
+                                    Selected
+                                  </span>
+                                </td>
+                                
+                                {/* Level Completed */}
+                                <td style={{ padding: "16px 24px" }}>
+                                  <span style={{
+                                    display: "inline-block", padding: "4px 10px", background: "#f1f5f9", 
+                                    color: "#475569", borderRadius: "12px", fontSize: "12px", fontWeight: "500"
+                                  }}>
+                                    {completedLevel}
+                                  </span>
+                                </td>
+                                
+                                {/* Actions */}
+                                <td style={{ padding: "16px 24px" }}>
+                                  <button onClick={() => viewResume(app)} style={{ background: "#f1f5f9", color: "#475569", border: "none", padding: "8px 14px", borderRadius: "8px", cursor: "pointer", fontSize: "13px", fontWeight: "500", display: "flex", alignItems: "center", gap: "6px" }}>
+                                    <FileText size={16} /> View Resume
+                                  </button>
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Applicant Details Modal */}
-      {showModal && selectedApplicant && (
+      {/* Create Round Modal */}
+      {roundModalOpen && selectedApplicantForRound && (
         <div style={{
           position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
+          top: 0, left: 0, right: 0, bottom: 0,
           background: "rgba(0,0,0,0.5)",
-          backdropFilter: "blur(4px)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          display: "flex", alignItems: "center", justifyContent: "center",
           zIndex: 1000,
-          padding: "20px"
-        }} onClick={() => setShowModal(false)}>
+          backdropFilter: "blur(4px)",
+        }}>
           <div style={{
             background: "white",
+            padding: "30px",
             borderRadius: "16px",
-            maxWidth: "600px",
-            width: "100%",
-            maxHeight: "80vh",
-            overflowY: "auto",
-            padding: "24px"
-          }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-              <h2 style={{ fontSize: "20px", fontWeight: "bold", color: "#0f172a", margin: 0 }}>Applicant Details</h2>
-              <button onClick={() => setShowModal(false)} style={{ background: "transparent", border: "none", fontSize: "24px", cursor: "pointer", color: "#64748b" }}>×</button>
-            </div>
+            width: "400px",
+            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+          }}>
+            <h3 style={{ margin: "0 0 20px 0", fontSize: "20px", color: "#0f172a" }}>Create Round for {selectedApplicantForRound.name}</h3>
             
             <div style={{ marginBottom: "20px" }}>
-              <h3 style={{ fontSize: "16px", fontWeight: "600", color: "#0f172a", marginBottom: "12px" }}>Personal Information</h3>
-              <div style={{ display: "grid", gap: "12px" }}>
-                <div><strong>Name:</strong> {selectedApplicant.name}</div>
-                <div><strong>Email:</strong> {selectedApplicant.email}</div>
-                <div><strong>Phone:</strong> {selectedApplicant.phone}</div>
-                <div><strong>Location:</strong> {selectedApplicant.location}</div>
-                <div><strong>Experience:</strong> {selectedApplicant.experience}</div>
-                <div><strong>Applied for:</strong> {selectedApplicant.role}</div>
-                <div><strong>Applied on:</strong> {formatDate(selectedApplicant.appliedDate)}</div>
-              </div>
+              <label style={{ display: "block", marginBottom: "8px", fontWeight: "500", fontSize: "14px", color: "#475569" }}>Round Name</label>
+              <input 
+                type="text" 
+                placeholder="e.g., Technical Round 1"
+                value={roundData.roundName}
+                onChange={(e) => setRoundData({...roundData, roundName: e.target.value})}
+                style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", outline: "none", fontSize: "14px" }}
+              />
+            </div>
+            
+            <div style={{ marginBottom: "24px" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
+                <input 
+                  type="checkbox"
+                  checked={roundData.isFinalRound}
+                  onChange={(e) => setRoundData({...roundData, isFinalRound: e.target.checked})}
+                  style={{ width: "18px", height: "18px", cursor: "pointer", accentColor: "rgb(20, 184, 166)" }}
+                />
+                <span style={{ fontSize: "14px", fontWeight: "500", color: "#0f172a" }}>Is Final Round?</span>
+              </label>
             </div>
 
-            <div style={{ marginBottom: "20px" }}>
-              <h3 style={{ fontSize: "16px", fontWeight: "600", color: "#0f172a", marginBottom: "12px" }}>Cover Letter</h3>
-              <div style={{ background: "#f8fafc", padding: "16px", borderRadius: "8px", color: "#475569", lineHeight: "1.6" }}>
-                {selectedApplicant.coverLetter}
-              </div>
-            </div>
-
-            <div>
-              <h3 style={{ fontSize: "16px", fontWeight: "600", color: "#0f172a", marginBottom: "12px" }}>Resume</h3>
-              <button style={{
-                background: "linear-gradient(135deg, rgb(20, 184, 166) 0%, rgb(14, 165, 233) 100%)",
-                color: "white",
-                border: "none",
-                borderRadius: "8px",
-                padding: "10px 20px",
-                fontSize: "14px",
-                fontWeight: "500",
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "8px"
-              }}>
-                <Download size={16} />
-                Download Resume
-              </button>
-            </div>
-
-            <div style={{ marginTop: "24px", paddingTop: "20px", borderTop: "1px solid #e2e8f0", display: "flex", gap: "12px" }}>
-              <select
-                value={selectedApplicant.status}
-                onChange={(e) => {
-                  updateStatus(selectedApplicant.id, e.target.value);
-                  setSelectedApplicant({ ...selectedApplicant, status: e.target.value });
-                }}
-                style={{
-                  flex: 1,
-                  padding: "10px",
-                  border: "1px solid #e2e8f0",
-                  borderRadius: "8px",
-                  fontSize: "14px",
-                  cursor: "pointer"
-                }}
+            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+              <button 
+                onClick={() => setRoundModalOpen(false)}
+                style={{ padding: "10px 20px", background: "white", color: "#475569", border: "1px solid #e2e8f0", borderRadius: "8px", cursor: "pointer", fontWeight: "500" }}
               >
-                <option value="pending">Pending Review</option>
-                <option value="reviewed">Reviewed</option>
-                <option value="interview">Schedule Interview</option>
-                <option value="hired">Hire</option>
-                <option value="rejected">Reject</option>
-              </select>
-              <button onClick={() => setShowModal(false)} style={{
-                padding: "10px 24px",
-                border: "1px solid #e2e8f0",
-                borderRadius: "8px",
-                background: "white",
-                cursor: "pointer"
-              }}>
-                Close
+                Cancel
+              </button>
+              <button 
+                onClick={handleSaveRound}
+                style={{ padding: "10px 20px", background: "rgb(20, 184, 166)", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600" }}
+              >
+                Save Round
               </button>
             </div>
           </div>
