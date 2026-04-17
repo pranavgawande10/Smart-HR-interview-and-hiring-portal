@@ -1,151 +1,190 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
-
-const RegisterCard = ({ title, role, buttonText ,login}) => {
-  // Separate states
+const RegisterCard = ({ title, role, buttonText, login, ROLE }) => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [profilePhoto, setProfilePhoto] = useState(null);
+  
+  // HR fields
+  const [companyName, setCompanyName] = useState("");
+  
+  // Interviewer fields
+  const [skills, setSkills] = useState("");
+  const [experienceYears, setExperienceYears] = useState("");
 
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  // Handle file change
-  const handleFileChange = (e) => {
-    setProfilePhoto(e.target.files[0]);
-  };
 
-  // Submit handler
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage("");
     setLoading(true);
 
-    // Validation
+    const normalizedRole = (role || ROLE || "").toLowerCase();
+
+    // Basic validation
     if (!name || !email || !password) {
       setMessage("All fields are required ❌");
       setLoading(false);
       return;
     }
 
-    try {
-      // Use FormData for file upload
-      const data = new FormData();
-      data.append("name", name);
-      data.append("email", email);
-      data.append("password", password);
-      data.append("role", role);
+    if (normalizedRole.includes("hr") && !companyName) {
+      setMessage("Company name is required ❌");
+      setLoading(false);
+      return;
+    }
 
-      if (profilePhoto) {
-        data.append("profilePhoto", profilePhoto);
-      }
-      
-      const res = await axios.post(
-        "http://localhost:3000/api/v1/candidates/register",
-        data,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
+    if (normalizedRole.includes("interviewer") && (!skills || !experienceYears)) {
+      setMessage("Skills and experience are required ❌");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const payloadRole = normalizedRole.includes("hr") ? "HR" : 
+                          normalizedRole.includes("interviewer") ? "INTERVIEWER" : "CANDIDATE";
+
+      const payload = {
+        name,
+        email,
+        password,
+        role: payloadRole,
+      };
+
+      let url = "http://localhost:3000/signup";
+      let dataToSend = payload;
+      let config = {};
+
+      if (normalizedRole.includes("candidate") || normalizedRole.includes("student")) {
+        url = "http://localhost:3001/api/v1/candidates/register";
+      } else {
+        if (normalizedRole.includes("hr")) {
+          payload.companyName = companyName;
         }
-      );
+
+        if (normalizedRole.includes("interviewer")) {
+          payload.skills = skills; 
+          payload.experienceYears = Number(experienceYears);
+        }
+      }
+
+      await axios.post(url, dataToSend, config);
 
       setMessage("Registration successful ✅");
-      console.log("Registered User:", res.data);
 
-      // Reset form
-      setName("");
-      setEmail("");
-      setPassword("");
-      setProfilePhoto(null);
+      setTimeout(() => {
+        navigate(login);
+      }, 1500);
 
     } catch (error) {
       console.error(error);
-      setMessage(error.response?.data?.message || "Server error ❌");
+      setMessage(error.response?.data?.message || error.response?.data || "Server error ❌");
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
+  const displayRole = role || ROLE;
 
-        <h2 className="text-2xl font-bold text-center mb-2">{title}</h2>
-        <p className="text-center text-gray-500 mb-6">
-          Register as {role}
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-900 px-4 relative overflow-hidden">
+      {/* Background Blooms */}
+      <div className="absolute top-[-10%] right-[-5%] w-96 h-96 bg-indigo-600 rounded-full mix-blend-screen filter blur-[100px] opacity-20 animate-blob"></div>
+      <div className="absolute bottom-[-10%] left-[-5%] w-96 h-96 bg-purple-600 rounded-full mix-blend-screen filter blur-[100px] opacity-20 animate-blob animation-delay-2000"></div>
+
+      <div className="glass-card p-8 rounded-2xl shadow-2xl w-full max-w-md relative z-10 border border-slate-700/50">
+
+        <h2 className="text-3xl font-extrabold text-white text-center mb-2 outfit-font">
+          {title}
+        </h2>
+        <p className="text-center text-indigo-300 font-medium mb-8">
+          Register as {displayRole}
         </p>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
 
-          {/* Name */}
           <input
             type="text"
             placeholder="Full Name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
             required
           />
 
-          {/* Email */}
           <input
             type="email"
             placeholder="Email Address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
             required
           />
 
-          {/* Password */}
           <input
             type="password"
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
             required
           />
 
-          {/* Profile Photo */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Profile Photo
-            </label>
+          {/* HR FIELDS */}
+          {(displayRole || "").toLowerCase().includes("hr") && (
             <input
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              className="w-full px-3 py-2 border rounded-lg bg-white"
+              type="text"
+              placeholder="Company Name"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
             />
-          </div>
+          )}
 
-          {/* Submit */}
+          {/* INTERVIEWER FIELDS */}
+          {(displayRole || "").toLowerCase().includes("interviewer") && (
+            <>
+              <input
+                type="text"
+                placeholder="Skills (React, Node, JS)"
+                value={skills}
+                onChange={(e) => setSkills(e.target.value)}
+                className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+              />
+              <input
+                type="number"
+                placeholder="Experience (Years)"
+                value={experienceYears}
+                onChange={(e) => setExperienceYears(e.target.value)}
+                className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+              />
+            </>
+          )}
+
+
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-60"
+            className="w-full bg-gradient-to-r from-indigo-500 to-cyan-500 text-white font-bold py-3 rounded-xl hover:shadow-[0_0_20px_rgba(99,102,241,0.4)] transition-all hover:-translate-y-0.5 disabled:opacity-60 disabled:hover:translate-y-0 disabled:shadow-none mt-2"
           >
             {loading ? "Registering..." : buttonText}
           </button>
         </form>
 
-        {/* Message */}
         {message && (
-          <p className="text-center mt-4 text-sm text-red-600">
+          <p className="text-center mt-6 text-sm font-medium text-rose-400 bg-rose-500/10 py-2 rounded-lg border border-rose-500/20">
             {message}
           </p>
         )}
-        <p className="text-sm text-center text-gray-500 mt-4">
+        
+        <p className="text-sm text-center text-slate-400 mt-6">
           Already have an account?
-          <span >
-            Login
-          </span>
-          <Link className="text-blue-600 cursor-pointer ml-1" to={login}>Login</Link>
+          <Link to={login} className="text-indigo-400 font-medium hover:text-indigo-300 transition-colors ml-1">Login</Link>
         </p>
       </div>
     </div>

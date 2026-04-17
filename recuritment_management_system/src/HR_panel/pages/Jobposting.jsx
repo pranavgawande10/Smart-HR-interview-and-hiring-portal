@@ -1,347 +1,205 @@
 import { useState, useEffect } from "react";
+import axios from "axios";
 import Card from "../components/Card";
 import AddJobForm from "../components/AddJobForm";
 import { Search } from "lucide-react";
 
-// Define your company information here
 const COMPANY_INFO = {
-  name: "Google", 
+  name: "Google",
   logo: "https://img.icons8.com/color/48/google-logo.png",
-  id: "google"
 };
 
 const Jobposting = () => {
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [jobs, setJobs] = useState([]);
+  const [editJob, setEditJob] = useState(null);
 
-  // Load jobs from localStorage when component mounts
-  useEffect(() => {
-    const savedJobs = localStorage.getItem("hrJobs");
-    if (savedJobs) {
-      const allJobs = JSON.parse(savedJobs);
-      // Filter to only show jobs from this company
-      const companyJobs = allJobs.filter(job => job.company === COMPANY_INFO.name);
-      setJobs(companyJobs);
-    } else {
-      // Default jobs for YOUR COMPANY ONLY
-      const defaultJobs = [
-        {
-          id: `${COMPANY_INFO.id}-software-engineer`,
-          company: COMPANY_INFO.name,
-          title: "Software Engineer",
-          vacancies: 3,
-          datePosted: "2 days ago",
-          salary: "4,500/hour",
-          location: "Mumbai, India",
-          brandLogo: COMPANY_INFO.logo,
-          description: `We are looking for a passionate Software Engineer to join our dynamic team at ${COMPANY_INFO.name}.`,
-          skillsRequired: ["React", "JavaScript", "Node.js"],
-          isExpired: true
-        },
-        {
-          id: `${COMPANY_INFO.id}-backend-developer`,
-          company: COMPANY_INFO.name,
-          title: "Backend Developer",
-          vacancies: 2,
-          datePosted: "1 day ago",
-          salary: "5,000/hour",
-          location: "Hyderabad, India",
-          brandLogo: COMPANY_INFO.logo,
-          description: `${COMPANY_INFO.name} is seeking a talented Backend Developer.`,
-          skillsRequired: ["Java", "Python", "Node.js", "PostgreSQL"],
-          isExpired: false
-        },
-        {
-          id: `${COMPANY_INFO.id}-frontend-developer`,
-          company: COMPANY_INFO.name,
-          title: "Frontend Developer",
-          vacancies: 5,
-          datePosted: "3 days ago",
-          salary: "6,000/hour",
-          location: "Bangalore, India",
-          brandLogo: COMPANY_INFO.logo,
-          description: `${COMPANY_INFO.name} is looking for a Senior Frontend Developer.`,
-          skillsRequired: ["React", "TypeScript", "Next.js", "Tailwind CSS"],
-          isExpired: false
-        }
-      ];
-      setJobs(defaultJobs);
-      localStorage.setItem("hrJobs", JSON.stringify(defaultJobs));
+  const API_BASE_URL = "http://localhost:3000";
+
+  const getAxiosConfig = () => ({
+    withCredentials: true,
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("token")}`,
+    },
+  });
+
+  // ✅ FETCH JOBS
+  const fetchJobs = async () => {
+    try {
+      const res = await axios.get(
+        `${API_BASE_URL}/job/myjobs`,
+        getAxiosConfig()
+      );
+
+      const fetchedJobs = res.data.map((job) => ({
+        ...job,
+        id: job._id,
+      }));
+
+      setJobs(fetchedJobs);
+    } catch (err) {
+      console.error("Failed to fetch jobs:", err);
     }
+  };
+
+  useEffect(() => {
+    fetchJobs();
   }, []);
 
-  // Save jobs to localStorage whenever jobs change
-  useEffect(() => {
-    if (jobs.length > 0) {
-      // Get all jobs from localStorage
-      const allJobs = JSON.parse(localStorage.getItem("hrJobs") || "[]");
-      // Remove old jobs from this company
-      const otherJobs = allJobs.filter(job => job.company !== COMPANY_INFO.name);
-      // Add updated jobs
-      const updatedAllJobs = [...otherJobs, ...jobs];
-      localStorage.setItem("hrJobs", JSON.stringify(updatedAllJobs));
+  // ✅ CREATE / UPDATE
+  const handleSaveJob = async (jobData) => {
+    try {
+      const payload = {
+        title: jobData.title,
+        description: jobData.description,
+        location: jobData.location,
+        vacancies: jobData.vacancies,
+        skillsrequired: jobData.skillsRequired,
+      };
+
+      if (editJob) {
+        // UPDATE
+        await axios.patch(
+          `${API_BASE_URL}/job/update/${editJob.id}`,
+          payload,
+          getAxiosConfig()
+        );
+      } else {
+        // CREATE
+        await axios.post(
+          `${API_BASE_URL}/job/create`,
+          payload,
+          getAxiosConfig()
+        );
+      }
+
+      fetchJobs();
+      setShowForm(false);
+      setEditJob(null);
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || "Failed to save job");
     }
-  }, [jobs]);
+  };
 
-  // Filter jobs - only by role since company is always the same
-  const filteredJobs = jobs.filter((job) =>
-    (job.title || job.post || "").toLowerCase().includes(search.toLowerCase())
-  );
+  // ✅ DELETE
+  const handleDeleteJob = async (jobId) => {
+    if (!window.confirm("Delete this job?")) return;
 
-  const handleAddNewJob = () => {
+    try {
+      await axios.delete(
+        `${API_BASE_URL}/job/delete/${jobId}`,
+        getAxiosConfig()
+      );
+
+      setJobs((prev) => prev.filter((job) => job.id !== jobId));
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || "Delete failed");
+    }
+  };
+
+  // ✅ EDIT
+  const handleEditJob = (job) => {
+    setEditJob(job);
     setShowForm(true);
   };
 
-  const handleSaveJob = (newJob) => {
-    // Create a URL-friendly ID with company name
-    const jobId = `${COMPANY_INFO.id}-${newJob.title.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
-    
-    // Set date posted to current time
-    const datePosted = "Just now";
-    
-    // Create job with company info
-    const jobWithCompany = {
-      ...newJob,
-      company: COMPANY_INFO.name,
-      brandLogo: COMPANY_INFO.logo,
-      id: jobId,
-      datePosted: datePosted,
-      isExpired: false
-    };
-    
-    // Add the new job to the list
-    const updatedJobs = [...jobs, jobWithCompany];
-    setJobs(updatedJobs);
-    
-    // Close the form
-    setShowForm(false);
-  };
-
-  // Handle delete job
-  const handleDeleteJob = (jobId) => {
-    if (window.confirm("Are you sure you want to delete this job posting?")) {
-      const updatedJobs = jobs.filter(job => job.id !== jobId);
-      setJobs(updatedJobs);
-    }
-  };
-
-  const handleCloseForm = () => {
-    setShowForm(false);
-  };
+  const filteredJobs = jobs.filter((job) =>
+    (job.title || "").toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div style={{ padding: "20px", maxWidth: "1200px", margin: "0 auto" }}>
       
-      {/* Header with Title and Add Button */}
+      {/* HEADER */}
       <div style={{
         marginBottom: "30px",
         padding: "25px",
-        background: "linear-gradient(135deg, rgb(20, 184, 166) 0%, rgb(14, 165, 233) 100%)",
+        background: "linear-gradient(135deg, rgb(20,184,166), rgb(14,165,233))",
         borderRadius: "16px",
         color: "white",
-        boxShadow: "0 4px 20px rgba(20, 184, 166, 0.3)",
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
       }}>
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
-            <img 
-              src={COMPANY_INFO.logo} 
-              alt={COMPANY_INFO.name}
-              style={{
-                width: "40px",
-                height: "40px",
-                borderRadius: "8px",
-                background: "white",
-                padding: "8px",
-              }}
-            />
-            <h1 style={{
-              fontSize: "28px",
-              fontWeight: "700",
-              margin: 0,
-              color: "white",
-            }}>
-              {COMPANY_INFO.name}
-            </h1>
-          </div>
-          <p style={{
-            fontSize: "16px",
-            opacity: "0.9",
-            margin: "0",
-            color: "rgba(255, 255, 255, 0.9)",
-          }}>
-            Manage and track all open positions
-          </p>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <img src={COMPANY_INFO.logo} style={{ width: "40px" }} />
+          <h1>{COMPANY_INFO.name}</h1>
         </div>
-        
-        {/* Add New Job Button */}
+
         <button
-          onClick={handleAddNewJob}
+          onClick={() => {
+            setEditJob(null);
+            setShowForm(true);
+          }}
           style={{
             background: "white",
-            color: "rgb(20, 184, 166)",
-            border: "none",
+            color: "#0ea5e9",
+            padding: "10px 20px",
             borderRadius: "10px",
-            padding: "12px 24px",
-            fontSize: "15px",
-            fontWeight: "600",
+            border: "none",
             cursor: "pointer",
-            transition: "all 0.3s ease",
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = "translateY(-2px)";
-            e.currentTarget.style.boxShadow = "0 6px 16px rgba(0, 0, 0, 0.15)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "translateY(0)";
-            e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.1)";
           }}
         >
-          <span style={{ fontSize: "20px" }}>+</span>
-          Add New Job
+          + Add Job
         </button>
       </div>
 
-      {/* Search Bar - Updated placeholder */}
+      {/* SEARCH */}
       <div style={{
-        marginBottom: "30px",
-        background: "white",
-        borderRadius: "12px",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-        border: "1px solid #e2e8f0",
-        padding: "4px",
         display: "flex",
         alignItems: "center",
+        marginBottom: "20px",
+        background: "white",
+        padding: "10px",
+        borderRadius: "10px",
       }}>
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          flex: "1",
-          padding: "0 16px",
-        }}>
-          <Search size={20} color="#94a3b8" />
-          <input
-            type="text"
-            placeholder="Search by job role..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "14px 12px",
-              border: "none",
-              fontSize: "15px",
-              outline: "none",
-              background: "transparent",
-            }}
-          />
-        </div>
-        <button style={{
-          background: "linear-gradient(135deg, rgb(20, 184, 166) 0%, rgb(14, 165, 233) 100%)",
-          color: "white",
-          border: "none",
-          borderRadius: "10px",
-          padding: "12px 24px",
-          fontSize: "14px",
-          fontWeight: "600",
-          cursor: "pointer",
-          margin: "4px",
-          transition: "all 0.3s ease",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.opacity = "0.9";
-          e.currentTarget.style.transform = "translateY(-1px)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.opacity = "1";
-          e.currentTarget.style.transform = "translateY(0)";
-        }}>
-          Search
-        </button>
+        <Search size={20} />
+        <input
+          style={{ flex: 1, border: "none", outline: "none", marginLeft: "10px" }}
+          placeholder="Search jobs..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
       </div>
 
-      {/* Stats Row */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(3, 1fr)",
-        gap: "20px",
-        marginBottom: "30px",
-      }}>
-        <div style={{
-          background: "white",
-          padding: "20px",
-          borderRadius: "12px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-          border: "1px solid #e2e8f0",
-        }}>
-          <p style={{ color: "#64748b", fontSize: "14px", marginBottom: "5px" }}>Total Jobs</p>
-          <h3 style={{ fontSize: "28px", fontWeight: "700", color: "#0f172a", margin: "0" }}>
-            {jobs.length}
-          </h3>
-        </div>
-        <div style={{
-          background: "white",
-          padding: "20px",
-          borderRadius: "12px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-          border: "1px solid #e2e8f0",
-        }}>
-          <p style={{ color: "#64748b", fontSize: "14px", marginBottom: "5px" }}>Active Applications</p>
-          <h3 style={{ fontSize: "28px", fontWeight: "700", color: "#0f172a", margin: "0" }}>124</h3>
-        </div>
-        <div style={{
-          background: "white",
-          padding: "20px",
-          borderRadius: "12px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-          border: "1px solid #e2e8f0",
-        }}>
-          <p style={{ color: "#64748b", fontSize: "14px", marginBottom: "5px" }}>Hiring Rate</p>
-          <h3 style={{ fontSize: "28px", fontWeight: "700", color: "#0f172a", margin: "0" }}>68%</h3>
-        </div>
-      </div>
-
-      {/* Jobs Grid */}
+      {/* JOB GRID */}
       <div style={{
         display: "grid",
         gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))",
         gap: "20px",
       }}>
         {filteredJobs.map((job) => (
-          <Card 
-            key={job.id} 
-            {...job} 
-            showDelete={true} 
-            onDelete={handleDeleteJob}
+          <Card
+            key={job.id}
+            {...job}
             id={job.id}
+            showDelete={true}
+            onDelete={handleDeleteJob}
+            onEdit={() => handleEditJob(job)}   // ✅ ADDED EDIT
           />
         ))}
       </div>
 
-      {/* No Results Message */}
+      {/* EMPTY STATE */}
       {filteredJobs.length === 0 && (
-        <div style={{
-          textAlign: "center",
-          padding: "60px",
-          background: "white",
-          borderRadius: "12px",
-          border: "1px dashed #e2e8f0",
-        }}>
-          <p style={{ fontSize: "18px", color: "#64748b" }}>
-            {search ? "No jobs found matching your search." : "No jobs posted yet. Click 'Add New Job' to create your first posting."}
-          </p>
+        <div style={{ textAlign: "center", marginTop: "40px" }}>
+          No jobs found
         </div>
       )}
 
-      {/* Add Job Form Modal */}
+      {/* MODAL FORM */}
       {showForm && (
-        <AddJobForm onClose={handleCloseForm} onSave={handleSaveJob} />
+        <AddJobForm
+          onClose={() => {
+            setShowForm(false);
+            setEditJob(null);
+          }}
+          onSave={handleSaveJob}
+          initialData={editJob}   // ✅ PASS EDIT DATA
+        />
       )}
     </div>
   );

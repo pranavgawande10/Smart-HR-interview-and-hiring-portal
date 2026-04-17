@@ -1,8 +1,9 @@
 // ApplyForm.jsx
 import { useState } from "react";
 import { X, Upload, FileText, Send, CheckCircle, User, Mail, Phone, AlertCircle, Briefcase } from "lucide-react";
+import axios from "axios";
 
-const ApplyForm = ({ jobTitle, companyName, onClose }) => {
+const ApplyForm = ({ jobId, jobTitle, companyName, onClose }) => {
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -99,7 +100,7 @@ const ApplyForm = ({ jobTitle, companyName, onClose }) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     const file = e.dataTransfer.files[0];
     if (file && file.type === "application/pdf") {
       setFormData(prev => ({ ...prev, resume: file }));
@@ -113,24 +114,37 @@ const ApplyForm = ({ jobTitle, companyName, onClose }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (validateForm()) {
       setIsSubmitting(true);
-      
-      // Simulate API call
-      setTimeout(() => {
-        console.log("Application submitted:", {
-          jobTitle,
-          companyName,
-          ...formData
-        });
-        setIsSubmitting(false);
+
+      const formDataToSend = new FormData();
+      formDataToSend.append("fullName", formData.fullName);
+      formDataToSend.append("email", formData.email);
+      formDataToSend.append("phone", formData.phone);
+      formDataToSend.append("coverLetter", formData.coverLetter);
+      formDataToSend.append("resume", formData.resume);
+
+      try {
+        await axios.post(
+          `http://localhost:3001/api/v1/application/apply/${jobId}`,
+          formData,
+          {
+            withCredentials: true,
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+              "Content-Type": "multipart/form-data"
+            }
+          }
+        );
         setIsSubmitted(true);
-        
-        setTimeout(() => {
-          onClose();
-        }, 2500);
-      }, 1500);
+        setTimeout(() => onClose(), 2500);
+      } catch (err) {
+        console.error("Apply error:", err);
+        alert(err.response?.data?.message || "Error submitting application");
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -270,7 +284,7 @@ const ApplyForm = ({ jobTitle, companyName, onClose }) => {
 
         {/* Form */}
         <form onSubmit={handleSubmit} style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-          
+
           {/* Full Name */}
           <div>
             <label style={{ display: "block", fontSize: "0.875rem", fontWeight: "600", color: "#374151", marginBottom: "0.5rem" }}>
@@ -428,7 +442,7 @@ const ApplyForm = ({ jobTitle, companyName, onClose }) => {
                 onChange={handleFileChange}
                 style={{ display: "none" }}
               />
-              
+
               {formData.resume ? (
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "1rem", flexWrap: "wrap" }}>
                   <FileText style={{ width: "3rem", height: "3rem", color: "#0d9488" }} />

@@ -213,6 +213,7 @@ const Card = (props) => {
       {/* Apply Form Modal */}
       {showForm && (
         <ApplyForm
+          jobId={props._id}
           jobTitle={props.post}
           companyName={props.company}
           onClose={() => setShowForm(false)}

@@ -44,6 +44,27 @@ export const updateCapacity = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+export const updateSkills = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { skills } = req.body;
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { skills },
+      { new: true }
+    );
+
+    res.status(200).json({
+      message: "Skills updated successfully",
+      user,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 // export const completeInterview = async (req, res) => {
 //   try {
 //     const { applicationId } = req.params;
@@ -190,7 +211,7 @@ export const scheduleInterview = async (req, res) => {
 export const rescheduleInterview = async (req, res) => {
   try {
     const { interviewId } = req.params;
-    const { date, time } = req.body;
+    const { date, time, reason } = req.body;
 
     const interview = await Interview.findById(interviewId);
 
@@ -242,7 +263,7 @@ export const rescheduleInterview = async (req, res) => {
     interview.scheduledAt = startTime;
     interview.status = "SCHEDULED";
     interview.candidateResponse = "PENDING";
-    interview.rescheduleReason = "Rescheduled by interviewer";
+    interview.rescheduleReason = reason || "Rescheduled by interviewer";
     interview.rescheduleCount = (interview.rescheduleCount || 0) + 1;
 
     await interview.save();
@@ -408,8 +429,8 @@ export const getMyInterviews = async (req, res) => {
     const userId = req.user._id;
 
     const interviews = await Interview.find({
-      interviewer: userId,
-      status: { $ne: "COMPLETED" } // 🔥 hide completed
+      interviewer: userId
+      // Removed { status: { $ne: "COMPLETED" } } to allow Dashboard fetching all histories
     })
       .populate("candidate", "name email")
       .populate("job", "title")
@@ -426,4 +447,19 @@ export const getMyInterviews = async (req, res) => {
 };
 
 
+export const getProfile = async (req, res) => {
+  try {
+    const userId = req.user._id;
 
+    // Fetch user safely, excluding password
+    const user = await User.findById(userId).select("-password -__v");
+
+    if (!user) {
+      return res.status(404).json({ message: "Profile not found" });
+    }
+
+    res.status(200).json({ profile: user });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};

@@ -34,6 +34,12 @@ import Notfound from './HR_panel/pages/Notfound';
 import Sidebar from "./HR_panel/components/Sidebar";
 import InterviewerSidebar from "./HR_panel/components/InterviewerSidebar";
 
+// Interviewer Panel
+import InterviewerDashboard from "./Interviewer_panel/pages/InterviewerDashboard";
+import InterviewerApplications from "./Interviewer_panel/pages/InterviewerApplications";
+import InterviewerInterviews from "./Interviewer_panel/pages/InterviewerInterviews";
+import InterviewerProfile from "./Interviewer_panel/pages/InterviewerProfile";
+
 // Import Candidate components
 import CandidateLayout from "./Candidate_panel/components/CandidateLayout"; // Keep this name
 import CandidateDashboard from "./Candidate_panel/pages/CandidateDashboard";
@@ -99,10 +105,10 @@ const AppShell = () => {
             path="/interviewer"
             element={<ProtectedRoute><Layout SidebarComponent={InterviewerSidebar} /></ProtectedRoute>}
           >
-            <Route index element={<Dashboard />} />
-            <Route path="applicants" element={<Applicants />} />
-            <Route path="interviews" element={<Interview />} />
-            <Route path="profile" element={<Profile />} />
+            <Route index element={<InterviewerDashboard />} />
+            <Route path="applicants" element={<InterviewerApplications />} />
+            <Route path="interviews" element={<InterviewerInterviews />} />
+            <Route path="profile" element={<InterviewerProfile />} />
           </Route>
 
           {/* Candidate Panel */}

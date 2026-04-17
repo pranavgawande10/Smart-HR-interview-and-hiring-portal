@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Calendar, Clock, RefreshCw, CheckCircle, FileText, X, Video, Star, Eye } from "lucide-react";
+import axios from "axios";
 
 const InterviewerInterviews = () => {
   const [interviews, setInterviews] = useState([]);
@@ -19,39 +20,37 @@ const InterviewerInterviews = () => {
   const [showViewFeedback, setShowViewFeedback] = useState(false);
 
   const gradient = "linear-gradient(135deg, rgb(20, 184, 166) 0%, rgb(14, 165, 233) 100%)";
-  const currentInterviewer = "John Doe (Tech Lead)";
 
-  const fetchInterviews = () => {
-    const saved = JSON.parse(localStorage.getItem("hrInterviews") || "[]");
-    
-    if (saved.length === 0) {
-      const dummy = [
-        {
-          id: 201, candidateName: "David Miller", position: "Full Stack Engineer", roundName: "Technical Round", date: "2024-04-18", time: "10:00 AM", type: "Online", status: "Scheduled", interviewers: [currentInterviewer]
-        },
-        {
-          id: 202, candidateName: "Sophie Clark", position: "Product Designer", roundName: "Portfolio Review", date: "2024-04-17", time: "02:00 PM", type: "Offline", status: "Completed", interviewers: [currentInterviewer]
-        },
-        {
-          id: 203, candidateName: "Lucas Wright", position: "Backend Lead", roundName: "System Design", date: "2024-04-15", time: "11:00 AM", type: "Online", status: "Completed", interviewers: [currentInterviewer],
-          submittedFeedback: {
-            rating: 4, technicalSkills: "Strong DB knowledge", communicationSkills: "Clear and precise", overallFeedback: "Good fit for the team", result: "Pass"
-          }
-        }
-      ];
-      setInterviews(dummy);
-      localStorage.setItem("hrInterviews", JSON.stringify(dummy));
-    } else {
-      const myInts = saved.filter(i => (i.interviewers || []).includes(currentInterviewer) || i.interviewer === currentInterviewer);
-      setInterviews(myInts);
+  const getAxiosConfig = () => ({
+    withCredentials: true,
+    headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+  });
+
+  const fetchInterviews = async () => {
+    try {
+      const res = await axios.get("http://localhost:3001/api/v1/interviewer/my-interviews", getAxiosConfig());
+      const mapped = (res.data.interviews || []).map(i => ({
+        id: i._id,
+        candidateName: i.candidate?.name || "Unknown",
+        position: i.job?.title || "Role",
+        roundName: `Round ${i.roundNumber}${i.isFinalRound ? ' (Final)' : ''}`,
+        date: i.scheduledAt ? new Date(i.scheduledAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : "N/A",
+        time: i.scheduledAt ? new Date(i.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "N/A",
+        type: i.mode || "Online",
+        status: i.status === "SCHEDULED" ? "Scheduled" : i.status === "COMPLETED" ? "Completed" : i.status,
+        submittedFeedback: i.result ? { result: i.result, feedback: i.feedback } : null
+      }));
+      setInterviews(mapped);
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to fetch interviews");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
     fetchInterviews();
-    window.addEventListener("localInterviewsChanged", fetchInterviews);
-    return () => window.removeEventListener("localInterviewsChanged", fetchInterviews);
   }, []);
 
   const showToast = (msg) => {
@@ -59,73 +58,79 @@ const InterviewerInterviews = () => {
     setTimeout(() => setToastMessage(""), 3000);
   };
 
-  const updateStatus = (interviewId, newStatus) => {
-    const updated = interviews.map(i => i.id === interviewId ? { ...i, status: newStatus } : i);
-    setInterviews(updated);
-    
-    const hrInts = JSON.parse(localStorage.getItem("hrInterviews") || "[]");
-    const merged = hrInts.map(h => h.id === interviewId ? { ...h, status: newStatus } : h);
-    localStorage.setItem("hrInterviews", JSON.stringify(merged));
-    window.dispatchEvent(new Event("localInterviewsChanged"));
-  };
+  // const handleRescheduleSubmit = async () => {
+  //   if (!rescheduleData.date || !rescheduleData.time || !rescheduleData.reason) {
+  //     alert("Please fill all details.");
+  //     return;
+  //   }
+  //   try {
+  //     await axios.put(`http://localhost:3001/api/v1/interviewer/reschedule/${selectedInterview.id}`, {
+  //       date: rescheduleData.date,
+  //       time: rescheduleData.time,
+  //       reason: rescheduleData.reason
+  //     }, getAxiosConfig());
+  //     setShowReschedule(false);
+  //     showToast("Interview successfully rescheduled.");
+  //     fetchInterviews();
+  //   } catch (err) {
+  //     console.error(err);
+  //     alert(err.response?.data?.message || "Failed to reschedule server");
+  //   }
+  // };
 
-  const handleRescheduleSubmit = () => {
-    if (!rescheduleData.date || !rescheduleData.time || !rescheduleData.reason) {
-      alert("Please fill all details.");
-      return;
-    }
-    const updated = interviews.map(i => i.id === selectedInterview.id ? { 
-      ...i, 
-      date: rescheduleData.date, 
-      time: rescheduleData.time, 
-      rescheduleReason: rescheduleData.reason,
-      status: "Rescheduled"
-    } : i);
-    
-    setInterviews(updated);
-    const hrInts = JSON.parse(localStorage.getItem("hrInterviews") || "[]");
-    const merged = hrInts.map(h => h.id === selectedInterview.id ? { 
-      ...h, 
-      date: rescheduleData.date, 
-      time: rescheduleData.time,
-      status: "Rescheduled"
-    } : h);
-    localStorage.setItem("hrInterviews", JSON.stringify(merged));
-    window.dispatchEvent(new Event("localInterviewsChanged"));
-    
+  const handleRescheduleSubmit = async () => {
+  if (
+    !rescheduleData.date?.trim() ||
+    !rescheduleData.time?.trim() 
+    // !rescheduleData.reason?.trim()
+  ) {
+    alert("Please fill all details.");
+    return;
+  }
+
+  try {
+    await axios.put(
+      `http://localhost:3001/api/v1/interviewer/reschedule/${selectedInterview._id}`,
+      {
+        date: rescheduleData.date,
+        time: rescheduleData.time,
+        // reason: rescheduleData.reason,
+      },
+      getAxiosConfig()
+    );
+
     setShowReschedule(false);
+    setRescheduleData({
+      date: "",
+      time: "",
+      // reason: "",
+    });
     showToast("Interview successfully rescheduled.");
-  };
+    fetchInterviews();
+  } catch (err) {
+    console.error("Reschedule error:", err);
+    alert(err.response?.data?.message || "Failed to reschedule interview");
+  }
+};
 
-  const handleFeedbackSubmit = () => {
+  const handleFeedbackSubmit = async () => {
     if (!feedbackData.feedback) {
       alert("Please enter feedback.");
       return;
     }
-
-    const payload = { ...feedbackData, timestamp: new Date().toISOString() };
     
-    const updated = interviews.map(i => i.id === selectedInterview.id ? { ...i, status: "Completed", submittedFeedback: payload } : i);
-    setInterviews(updated);
-
-    const hrInts = JSON.parse(localStorage.getItem("hrInterviews") || "[]");
-    const merged = hrInts.map(h => h.id === selectedInterview.id ? { ...h, status: "Completed", submittedFeedback: payload } : h);
-    localStorage.setItem("hrInterviews", JSON.stringify(merged));
-    window.dispatchEvent(new Event("localInterviewsChanged"));
-
-    // Send to HR Notification System
-    const notifs = JSON.parse(localStorage.getItem("hrNotifications") || "[]");
-    notifs.push({
-      id: Date.now(),
-      message: `${selectedInterview.candidateName} Feedback Submitted: ${payload.result}`,
-      result: payload.result,
-      timestamp: new Date().toISOString(),
-      read: false
-    });
-    localStorage.setItem("hrNotifications", JSON.stringify(notifs));
-
-    setShowFeedback(false);
-    showToast("Feedback submitted. HR has been notified.");
+    try {
+      await axios.patch(`http://localhost:3001/api/v1/interviewer/complete-interview/${selectedInterview.id}`, {
+        feedback: feedbackData.feedback,
+        result: feedbackData.result.toUpperCase()
+      }, getAxiosConfig());
+      setShowFeedback(false);
+      showToast("Feedback submitted. HR has been notified.");
+      fetchInterviews();
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || "Failed to submit feedback");
+    }
   };
 
 
@@ -232,10 +237,10 @@ const InterviewerInterviews = () => {
               <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "5px" }}>New Time</label>
               <input type="time" value={rescheduleData.time} onChange={(e) => setRescheduleData({...rescheduleData, time: e.target.value})} style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #cbd5e1" }} />
             </div>
-            <div style={{ marginBottom: "20px" }}>
+            {/* <div style={{ marginBottom: "20px" }}>
               <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "5px" }}>Reason for Rescheduling</label>
               <textarea rows="3" value={rescheduleData.reason} onChange={(e) => setRescheduleData({...rescheduleData, reason: e.target.value})} style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #cbd5e1", resize: "vertical" }} />
-            </div>
+            </div> */}
             <button onClick={handleRescheduleSubmit} style={{ width: "100%", padding: "14px", background: gradient, color: "white", border: "none", borderRadius: "10px", fontWeight: "700", cursor: "pointer" }}>Confirm Reschedule</button>
           </div>
         </div>

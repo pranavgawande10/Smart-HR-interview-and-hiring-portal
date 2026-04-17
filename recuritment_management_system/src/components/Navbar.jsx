@@ -55,10 +55,12 @@ const Navbar = () => {
                             </button>
 
                             {loginOpen && (
-                                <div className="absolute top-8 right-0 glass-card text-white rounded-xl shadow-2xl shadow-indigo-500/10 w-48 z-50 overflow-hidden border border-slate-700/50">
-                                    <Link className="block px-4 py-2.5 hover:bg-white/10 transition-colors text-sm" to="/login/hr">HR</Link>
-                                    <Link className="block px-4 py-2.5 hover:bg-white/10 transition-colors text-sm" to="/login/interviewer">Interviewer</Link>
-                                    <Link className="block px-4 py-2.5 hover:bg-white/10 transition-colors text-sm" to="/login/candidate">Candidate</Link>
+                                <div className="absolute top-full right-0 pt-2 z-50">
+                                    <div className="glass-card text-white rounded-xl shadow-2xl shadow-indigo-500/10 w-48 overflow-hidden border border-slate-700/50 hover:block">
+                                        <Link onClick={() => setLoginOpen(false)} className="block px-4 py-2.5 hover:bg-white/10 transition-colors text-sm" to="/login/hr">HR</Link>
+                                        <Link onClick={() => setLoginOpen(false)} className="block px-4 py-2.5 hover:bg-white/10 transition-colors text-sm" to="/login/interviewer">Interviewer</Link>
+                                        <Link onClick={() => setLoginOpen(false)} className="block px-4 py-2.5 hover:bg-white/10 transition-colors text-sm" to="/login/candidate">Candidate</Link>
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -76,10 +78,12 @@ const Navbar = () => {
                             </button>
 
                             {registerOpen && (
-                                <div className="absolute top-8 right-0 glass-card text-white rounded-xl shadow-2xl shadow-indigo-500/10 w-48 z-50 overflow-hidden border border-slate-700/50">
-                                    <Link className="block px-4 py-2.5 hover:bg-white/10 transition-colors text-sm" to="/register/hr">HR</Link>
-                                    <Link className="block px-4 py-2.5 hover:bg-white/10 transition-colors text-sm" to="/register/interviewer">Interviewer</Link>
-                                    <Link className="block px-4 py-2.5 hover:bg-white/10 transition-colors text-sm" to="/register/candidate">Candidate</Link>
+                                <div className="absolute top-full right-0 pt-2 z-50">
+                                    <div className="glass-card text-white rounded-xl shadow-2xl shadow-indigo-500/10 w-48 overflow-hidden border border-slate-700/50 hover:block">
+                                        <Link onClick={() => setRegisterOpen(false)} className="block px-4 py-2.5 hover:bg-white/10 transition-colors text-sm" to="/register/hr">HR</Link>
+                                        <Link onClick={() => setRegisterOpen(false)} className="block px-4 py-2.5 hover:bg-white/10 transition-colors text-sm" to="/register/interviewer">Interviewer</Link>
+                                        <Link onClick={() => setRegisterOpen(false)} className="block px-4 py-2.5 hover:bg-white/10 transition-colors text-sm" to="/register/candidate">Candidate</Link>
+                                    </div>
                                 </div>
                             )}
                         </div>

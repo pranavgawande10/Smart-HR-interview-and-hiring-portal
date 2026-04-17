@@ -182,20 +182,6 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onMobileRequestClose })
             fontSize: "16px",
             flexShrink: 0,
           }}>
-<<<<<<< HEAD:src/HR_panel/components/sidebar.jsx
-            Anushka Jannawar
-          </p>
-          <p style={{ 
-            margin: "2px 0 0 0", 
-            fontSize: "12px", 
-            color: "#94a3b8",
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}>
-           Senior HR Manager
-          </p>
-=======
             {userName.charAt(0).toUpperCase()}
           </div>
           <div style={{ flex: "1", minWidth: "0" }}>
@@ -221,7 +207,6 @@ const Sidebar = ({ isMobile = false, mobileOpen = false, onMobileRequestClose })
               {userRole}
             </p>
           </div>
->>>>>>> e76d803 (Changed UI):recuritment_management_system/src/HR_panel/components/Sidebar.jsx
         </div>
         <button onClick={handleLogout} style={{
           background: "transparent",

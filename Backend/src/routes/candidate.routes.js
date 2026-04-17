@@ -7,7 +7,8 @@ import {
   updateProfilePhoto,
   changePassword,
   getCurrentUser,
-  respondToInterview
+  respondToInterview,
+  getMyInterviews
 } from "../controller/candidate.controller.js";
 
 import { upload } from "../middleware/multer.middleware.js";
@@ -32,7 +33,7 @@ router.patch(
   authorizeRoles("CANDIDATE"),
   changePassword
 );
-
+ 
 // Logout
 router.post(
   "/logout",
@@ -64,6 +65,14 @@ router.patch(
   verifyJWT,
   authorizeRoles("CANDIDATE"),
   respondToInterview
+);
+
+// Get My Interviews
+router.get(
+  "/my-interviews",
+  verifyJWT,
+  authorizeRoles("CANDIDATE"),
+  getMyInterviews
 );
 
 export default router;

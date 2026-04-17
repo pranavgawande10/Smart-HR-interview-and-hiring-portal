@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Mail, Phone, MapPin, Briefcase, Award, Edit2, Save, X, User, Activity } from "lucide-react";
+import axios from "axios";
 
 const InterviewerProfile = () => {
   const [isEditing, setIsEditing] = useState(false);
@@ -33,26 +34,78 @@ const InterviewerProfile = () => {
     background: "white", borderRadius: "12px", padding: "24px", border: "1px solid #e2e8f0",
   };
 
-  useEffect(() => {
-    const savedProfile = localStorage.getItem("interviewerProfileData");
-    if (savedProfile) {
-      setProfile(JSON.parse(savedProfile));
-      setEditedProfile(JSON.parse(savedProfile));
+  const getAxiosConfig = () => ({
+    withCredentials: true,
+    headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+  });
+
+  const fetchProfileInfo = async () => {
+    try {
+      // 1. Fetch Profile Info
+      const res = await axios.get("http://localhost:3001/api/v1/interviewer/profile", getAxiosConfig());
+      const p = res.data.profile;
+      const formatted = {
+        name: p?.name || "Interviewer",
+        email: p?.email || "",
+        phone: p?.phone || "",
+        location: "System Default",
+        designation: "Technical Interviewer",
+        department: "Engineering",
+        experience: p?.experienceYears ? `${p.experienceYears} years` : "N/A",
+        bio: p?.bio || "Interviewer Bio.",
+        skills: p?.skills || ["System Design", "Algorithms"],
+        isAvailable: p?.availabilityStatus === "AVAILABLE",
+        maxCapacity: p?.maxCapacity || 5,
+        capacityType: "day"
+      };
+      setProfile(formatted);
+      setEditedProfile(formatted);
+
+      // 2. Calculate Active Load
+      const intsRes = await axios.get("http://localhost:3001/api/v1/interviewer/my-interviews", getAxiosConfig());
+      const scheduledCount = (intsRes.data.interviews || []).filter(i => i.status === "SCHEDULED").length;
+      setCurrentLoad(scheduledCount);
+
+    } catch (err) {
+      console.error(err);
     }
+  };
 
-    // Calculate Current Load 
-    const hrInts = JSON.parse(localStorage.getItem("hrInterviews") || "[]");
-    const activeLoad = hrInts.filter(i => 
-      ((i.interviewers || []).includes(profile.name.split(' ')[0]) || i.interviewer === profile.name || (i.interviewers || []).includes("John Doe (Tech Lead)")) && 
-      (i.status || "").toLowerCase() === "scheduled"
-    ).length;
-    setCurrentLoad(activeLoad);
-  }, [profile.name]);
+  useEffect(() => {
+    fetchProfileInfo();
+  }, []);
 
-  const handleSave = () => {
-    setProfile(editedProfile);
-    setIsEditing(false);
-    localStorage.setItem("interviewerProfileData", JSON.stringify(editedProfile));
+  const handleSave = async () => {
+    try {
+      // Update availability
+      if (editedProfile.isAvailable !== profile.isAvailable) {
+        await axios.patch("http://localhost:3001/api/v1/interviewer/availability", {
+          availabilityStatus: editedProfile.isAvailable ? "AVAILABLE" : "UNAVAILABLE"
+        }, getAxiosConfig());
+      }
+      // Update capacity
+      if (editedProfile.maxCapacity !== profile.maxCapacity) {
+        await axios.patch("http://localhost:3001/api/v1/interviewer/capacity", {
+          maxCapacity: Number(editedProfile.maxCapacity)
+        }, getAxiosConfig());
+      }
+      
+      // Update skills (if we simply assume they might have changed)
+      const currentSkills = JSON.stringify(profile.skills);
+      const newSkills = JSON.stringify(editedProfile.skills);
+      if (currentSkills !== newSkills) {
+        await axios.patch("http://localhost:3001/api/v1/interviewer/skills", {
+          skills: editedProfile.skills
+        }, getAxiosConfig());
+      }
+      
+      setProfile(editedProfile);
+      setIsEditing(false);
+      alert("Settings updated successfully!");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update preferences");
+    }
   };
 
   const handleCancel = () => {

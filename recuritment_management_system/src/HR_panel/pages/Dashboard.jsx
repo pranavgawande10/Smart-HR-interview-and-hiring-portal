@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import axios from "axios";
 
 const Dashboard = () => {
   const [stats, setStats] = useState([
@@ -10,29 +11,54 @@ const Dashboard = () => {
 
   const [recentApplicants, setRecentApplicants] = useState([]);
 
-  useEffect(() => {
-    setTimeout(() => {
-      setRecentApplicants([
-        {
-          name: "Sarah Johnson",
-          role: "Frontend Developer",
-          status: "Interview",
-          date: "2024-01-15",
-        },
-        {
-          name: "Michael Chen",
-          role: "Product Manager",
-          status: "Pending",
-          date: "2024-01-14",
-        },
-        {
-          name: "Emily Davis",
-          role: "UX Designer",
-          status: "Hired",
-          date: "2024-01-13",
-        },
+  const getAxiosConfig = () => ({
+    withCredentials: true,
+    headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+  });
+
+  const fetchData = async () => {
+    try {
+      // Fetch Jobs
+      const jobsRes = await axios.get("http://localhost:3000/job/myjobs", getAxiosConfig());
+      const fetchedJobs = jobsRes.data;
+      
+      // Fetch Applications
+      const appsPromises = fetchedJobs.map(job =>
+        axios.get(`http://localhost:3001/api/v1/application/job/${job._id}`, getAxiosConfig())
+          .then(res => res.data.applications.map(app => ({
+            name: app.fullName,
+            role: job.title, // display job title as role
+            status: app.status === "applied" ? "Pending" : 
+                    app.status === "shortlisted" ? "Shortlisted" : 
+                    app.status === "interview" ? "Interview" : 
+                    app.status === "selected" ? "Hired" : "Rejected",
+            date: new Date(app.createdAt || Date.now()).toISOString().split('T')[0]
+          })))
+          .catch(() => [])
+      );
+      
+      const appsArrays = await Promise.all(appsPromises);
+      const allApps = appsArrays.flat();
+      
+      // Compute total hired
+      const hiredCount = allApps.filter(a => a.status === "Hired").length;
+      const interviewCount = allApps.filter(a => a.status === "Interview").length;
+
+      setStats([
+        { title: "Active Jobs", value: fetchedJobs.length, change: "Current", type: "up" },
+        { title: "Total Applicants", value: allApps.length, change: "Total", type: "up" },
+        { title: "Interviews Active", value: interviewCount, change: "Total", type: "up" },
+        { title: "Total Hired", value: hiredCount, change: "Total", type: "up" },
       ]);
-    }, 400);
+
+      setRecentApplicants(allApps.slice(0, 5)); // show latest 5
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
   }, []);
 
   return (

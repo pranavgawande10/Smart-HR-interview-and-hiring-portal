@@ -1,34 +1,43 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import JobCard from "../../Candidate_panel/components/Card";
 import { Search } from "lucide-react";
+import axios from "axios";
 
 const CandidateJobs = () => {
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("all");
+  const [allJobs, setAllJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const allJobs = [
-    {
-      company: "Google",
-      post: "Software Engineer",
-      tag1: "Full Time",
-      tag2: "Remote",
-      datePosted: "2 days ago",
-      pay: "4,500/hour",
-      location: "Mumbai, India",
-      brandLogo: "https://img.icons8.com/color/48/google-logo.png",
-    },
-    {
-      company: "Amazon",
-      post: "Backend Developer",
-      tag1: "Full Time",
-      tag2: "Hybrid",
-      datePosted: "1 day ago",
-      pay: "5,000/hour",
-      location: "Hyderabad, India",
-      brandLogo: "https://img.icons8.com/color/48/amazon.png",
-    },
-    // Add more jobs...
-  ];
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        const res = await axios.get("http://localhost:3001/api/v1/jobs/all-jobs");
+        const jobsArray = res.data.data || res.data; // Handles both structures securely
+        const mapped = jobsArray.map(job => ({
+          _id: job._id,
+          company: job.createdBy?.companyName || "Unknown Company",
+          post: job.title,
+          tag1: "Full Time",
+          tag2: job.location,
+          datePosted: new Date(job.createdAt || Date.now()).toLocaleDateString(),
+          pay: "Competitive",
+          location: job.location,
+          brandLogo: "https://img.icons8.com/color/48/domain.png",
+        }));
+        setAllJobs(mapped);
+      } catch (err) {
+        console.error("Error fetching jobs:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchJobs();
+  }, []);
+
+  const filteredJobs = allJobs.filter(job => 
+    job.post.toLowerCase().includes(search.toLowerCase()) || 
+    job.company.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div>
@@ -71,16 +80,19 @@ const CandidateJobs = () => {
         </div>
       </div>
 
-      {/* Job Cards Grid */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))",
-        gap: "20px",
-      }}>
-        {allJobs.map((job, index) => (
-          <JobCard key={index} {...job} />
-        ))}
-      </div>
+      {loading ? (
+        <div style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>Loading jobs...</div>
+      ) : (
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))",
+          gap: "20px",
+        }}>
+          {filteredJobs.map((job) => (
+            <JobCard key={job._id} {...job} />
+          ))}
+        </div>
+      )}
     </div>
   );
 };

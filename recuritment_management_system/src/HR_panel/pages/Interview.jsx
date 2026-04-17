@@ -3,76 +3,60 @@ import {
   Calendar, Clock, Users, CheckCircle, XCircle, Video, List, User, 
   ChevronRight, TrendingUp, ChevronDown, FileText, Star, Award
 } from "lucide-react";
+import axios from "axios";
 
 const Interview = () => {
   const [interviews, setInterviews] = useState([]);
   const [selectedInterview, setSelectedInterview] = useState(null);
 
-  useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("hrInterviews") || "[]");
-    
-    // Fallback dummy data if no interviews exist
-    if (saved.length === 0) {
-      const dummyData = [
-        {
-          id: 1,
-          candidateName: "Sarah Johnson",
-          position: "Frontend Developer",
-          date: "Oct 25, 2024",
-          time: "10:00 AM",
-          interviewers: ["John Doe (Tech Lead)"],
-          roundName: "Technical Round",
-          status: "Scheduled",
-          link: "https://meet.google.com/abc-defg-hij"
-        },
-        {
-          id: 2,
-          candidateName: "Priya Sharma",
-          position: "Product Manager",
-          date: "Oct 18, 2024",
-          time: "11:30 AM",
-          interviewers: ["Sarah Wilson"],
-          roundName: "Final Round",
-          status: "Completed",
-          submittedFeedback: {
-            rating: 5,
-            technicalSkills: "Excellent product sense and architecture design.",
-            communicationSkills: "Very clear articulation of past experiences.",
-            overallFeedback: "Strong candidate, fits the role perfectly.",
-            result: "Selected"
-          }
-        },
-        {
-          id: 3,
-          candidateName: "Michael Chen",
-          position: "Backend Developer",
-          date: "Oct 26, 2024",
-          time: "2:00 PM",
-          interviewers: ["Jane Smith (HR)"],
-          roundName: "HR Round",
-          status: "Scheduled",
-          link: "https://meet.google.com/xyz-abcd-efg"
-        }
-      ];
-      setInterviews(dummyData);
-      localStorage.setItem("hrInterviews", JSON.stringify(dummyData));
-    } else {
-      setInterviews(saved);
-    }
+  const getAxiosConfig = () => ({
+    withCredentials: true,
+    headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+  });
 
-    // Optional listener if interviewing happens in real-time
-    const handleStorage = () => {
-      const updated = JSON.parse(localStorage.getItem("hrInterviews") || "[]");
-      if (updated.length > 0) setInterviews(updated);
-    };
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
+  const fetchInterviews = async () => {
+    try {
+      const res = await axios.get("http://localhost:3001/api/v1/hr/my-interviews", getAxiosConfig());
+      const mapped = (res.data.data || res.data.interviews || []).map(i => ({
+        id: i._id,
+        candidateName: i.candidate?.name || "Unknown",
+        position: i.job?.title || "Role",
+        date: i.scheduledAt ? new Date(i.scheduledAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : "",
+        time: i.scheduledAt ? new Date(i.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "",
+        interviewers: [(i.interviewer?.name || "Unassigned")],
+        roundName: `Round ${i.roundNumber}${i.isFinalRound ? ' (Final)' : ''}`,
+        status: i.status === "ASSIGNED" || i.status === "PENDING" ? "Scheduled" : i.status === "SCHEDULED" ? "Scheduled" : i.status === "COMPLETED" ? "Completed" : i.status,
+        link: i.meetingLink || "",
+        submittedFeedback: i.result ? {
+          rating: i.feedbackRating || 5,
+          technicalSkills: i.feedbackTechnical || "Evaluated by Interviewer",
+          communicationSkills: i.feedbackCommunication || "Evaluated by Interviewer",
+          overallFeedback: i.feedbackOverall || i.comments || "Feedback received",
+          result: i.result
+        } : null
+      }));
+      setInterviews(mapped);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchInterviews();
   }, []);
 
-  const updateStatus = (id, newStatus) => {
-    const updated = interviews.map(i => i.id === id ? { ...i, status: newStatus } : i);
-    setInterviews(updated);
-    localStorage.setItem("hrInterviews", JSON.stringify(updated));
+  const updateStatus = async (id, newStatus) => {
+    try {
+       // Optimistic Update
+       setInterviews(interviews.map(i => i.id === id ? { ...i, status: newStatus } : i));
+       
+       // Just mapping 'Hired' or 'Rejected' to the HR final decision API.
+       if (newStatus === "Hired" || newStatus === "Rejected") {
+          await axios.patch(`http://localhost:3001/api/v1/hr/final-decision/${id}`, { decision: newStatus.toUpperCase() }, getAxiosConfig()).catch(e=>console.error(e));
+       }
+    } catch (err) {
+       console.error("Status Update Failed", err);
+    }
   };
 
   const getStatusBadge = (status) => {

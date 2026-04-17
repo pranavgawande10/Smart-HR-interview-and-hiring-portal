@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Calendar, Clock, Users, CheckCircle, Video, TrendingUp, UserCheck, CheckSquare, List } from "lucide-react";
+import axios from "axios";
 
 const InterviewerDashboard = () => {
   const [interviews, setInterviews] = useState([]);
@@ -7,52 +8,63 @@ const InterviewerDashboard = () => {
 
   // Gradient aligning with HR dashboard requirements
   const gradient = "linear-gradient(135deg, rgb(20, 184, 166) 0%, rgb(14, 165, 233) 100%)";
-  const currentInterviewer = "John Doe (Tech Lead)";
+  const currentInterviewer = localStorage.getItem("userName") || "Interviewer";
+
+  const getAxiosConfig = () => ({
+    withCredentials: true,
+    headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+  });
 
   useEffect(() => {
-    // Load assigned interviews spanning across the panel scopes
-    const savedJobs = JSON.parse(localStorage.getItem("hrInterviews") || "[]");
-    const myInterviews = savedJobs.filter(i => (i.interviewers || []).includes(currentInterviewer) || i.interviewer === currentInterviewer);
-    
-    // Fallback Dummy Data specifically structured for Interviewer Dashboard views
-    if (myInterviews.length === 0) {
-      const dummyInterviews = [
-        {
-          id: 1, candidateName: "Sarah Johnson", position: "Frontend Developer", company: "Company Inc", roundName: "Technical Round", status: "Scheduled", date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), time: "10:00 AM", duration: "60", type: "Online", link: "https://meet.google.com/abc", interviewers: [currentInterviewer]
-        },
-        {
-          id: 2, candidateName: "Michael Chen", position: "Backend Developer", company: "Company Inc", roundName: "System Design", status: "Pending Feedback", date: "Apr 10, 2024", time: "2:00 PM", type: "Online", interviewers: [currentInterviewer]
-        },
-        {
-          id: 3, candidateName: "Priya Sharma", position: "UI/UX Designer", company: "Company Inc", roundName: "Portfolio Review", status: "Completed", date: "Apr 05, 2024", time: "11:30 AM", type: "Offline", interviewers: [currentInterviewer], submittedFeedback: { result: "Pass" }
-        },
-        {
-          id: 4, candidateName: "Alex Thompson", position: "DevOps Engineer", company: "Company Inc", roundName: "Technical Round", status: "Scheduled", date: "Apr 20, 2024", time: "3:00 PM", type: "Online", link: "https://meet.google.com/xyz", interviewers: [currentInterviewer]
-        }
-      ];
-      setInterviews(dummyInterviews);
-      localStorage.setItem("hrInterviews", JSON.stringify(dummyInterviews));
-    } else {
-      setInterviews(myInterviews);
-    }
-    setLoading(false);
+    const fetchDashboardData = async () => {
+      try {
+        const res = await axios.get("http://localhost:3001/api/v1/interviewer/my-interviews", getAxiosConfig());
+        setInterviews(res.data.interviews || []);
+      } catch (err) {
+        console.error("Dashboard Fetch Error", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboardData();
   }, []);
 
-  const totalAssigned = 8;
-  const scheduled = 3;
-  const completed = 4;
-  const pendingFeedback = 1;
+  const totalAssigned = interviews.length;
+  const scheduled = interviews.filter(i => i.status === "SCHEDULED").length;
+  const completed = interviews.filter(i => i.status === "COMPLETED").length;
+  // Let's assume pending feedback means they are scheduled but dates have passed, or simply anything not COMPLETED.
+  // Actually, wait, if they have result/feedback already it's completed.
+  // Let's consider pending feedback as any interview that is SCHEDULED and in the past, but we will just map logically.
+  const now = new Date();
+  const pendingFeedback = interviews.filter(i => i.status === "SCHEDULED" && new Date(i.scheduledAt) < now).length;
 
-  const todaysSchedule = [
-    { id: 101, candidateName: "Sarah Johnson", position: "Frontend Developer", roundName: "Technical Round", time: "10:00 AM — 60 min", type: "Online", status: "Scheduled" },
-    { id: 102, candidateName: "Michael Chen", position: "Product Manager", roundName: "Round 1", time: "2:00 PM — 45 min", type: "Offline", status: "Scheduled" }
-  ];
+  const todaysSchedule = interviews
+    .filter(i => i.status === "SCHEDULED" && new Date(i.scheduledAt).toDateString() === now.toDateString())
+    .map(i => ({
+      id: i._id,
+      candidateName: i.candidate?.name || "Unknown",
+      position: i.job?.title || "Role",
+      roundName: `Round ${i.roundNumber}${i.isFinalRound ? ' (Final)' : ''}`,
+      time: new Date(i.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + " — 30 min",
+      type: i.mode || "Online",
+      status: "Scheduled"
+    }));
   
-  const recentCompleted = [
-    { id: 201, candidateName: "Emily Davis", position: "UX Designer", roundName: "Final Round", date: "10 Apr 2026", resultBadge: { text: "Selected", color: "#166534", bg: "#dcfce7" } },
-    { id: 202, candidateName: "Robert Brown", position: "Backend Developer", roundName: "Technical Round", date: "8 Apr 2026", resultBadge: { text: "Next Round", color: "#2563eb", bg: "#dbeafe" } },
-    { id: 203, candidateName: "Lisa Wang", position: "DevOps Engineer", roundName: "Round 1", date: "6 Apr 2026", resultBadge: { text: "Rejected", color: "#991b1b", bg: "#fee2e2" } }
-  ];
+  const recentCompleted = interviews
+    .filter(i => i.status === "COMPLETED")
+    .sort((a,b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+    .map(i => ({
+      id: i._id,
+      candidateName: i.candidate?.name || "Unknown",
+      position: i.job?.title || "Role",
+      roundName: `Round ${i.roundNumber}`,
+      date: new Date(i.updatedAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
+      resultBadge: { 
+        text: i.result || "Pass", 
+        color: i.result === "PASS" ? "#166534" : "#991b1b", 
+        bg: i.result === "PASS" ? "#dcfce7" : "#fee2e2" 
+      }
+    }));
 
   if (loading) {
     return (
@@ -75,7 +87,7 @@ const InterviewerDashboard = () => {
         boxShadow: "0 4px 20px rgba(20, 184, 166, 0.3)"
       }}>
         <h1 style={{ fontSize: "28px", fontWeight: "700", marginBottom: "8px", color: "white" }}>
-          Good morning, John! 👋
+          Good morning, {currentInterviewer.split(' ')[0]}! 👋
         </h1>
         <p style={{ fontSize: "16px", opacity: "0.9", margin: "0", color: "rgba(255, 255, 255, 0.9)" }}>
           Here's what's happening with your interviews today.

@@ -1,22 +1,54 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { UserCircle, Mail, Phone, MapPin, Briefcase, GraduationCap, Award, Edit2, Save, X, Upload } from "lucide-react";
+import axios from "axios";
 
 const CandidateProfile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [profile, setProfile] = useState({
-    name: "John Doe",
-    email: "john.doe@example.com",
-    phone: "+91 98765 43210",
-    location: "Mumbai, India",
-    title: "Senior Frontend Developer",
-    experience: "5 years",
-    education: "B.Tech Computer Science",
-    skills: ["React", "JavaScript", "TypeScript", "Node.js", "Tailwind CSS", "Redux"],
-    bio: "Passionate frontend developer with 5 years of experience building responsive web applications. Looking for challenging roles in product-based companies.",
-    resume: "John_Doe_Resume_2026.pdf",
+    name: "Loading...",
+    email: "Loading...",
+    phone: "Loading...",
+    location: "Not Provided",
+    title: "Candidate",
+    experience: "Not Provided",
+    education: "Not Provided",
+    skills: [],
+    bio: "Passionate candidate looking for new opportunities.",
+    resume: "No resume uploaded",
+    profilePhoto: null
   });
 
   const [editedProfile, setEditedProfile] = useState({ ...profile });
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await axios.get("http://localhost:3001/api/v1/candidates/current-user", {
+          withCredentials: true,
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+        });
+        const user = res.data.data;
+        const newProfile = {
+          name: user.name || "Unknown",
+          email: user.email || "",
+          phone: user.phone || "Not Provided",
+          location: "Not Provided",
+          title: "Candidate",
+          experience: "Not Provided",
+          education: "Not Provided",
+          skills: [],
+          bio: "Passionate candidate looking for new opportunities.",
+          resume: user.resume || "No resume uploaded",
+          profilePhoto: user.profilePhoto || null,
+        };
+        setProfile(newProfile);
+        setEditedProfile(newProfile);
+      } catch (err) {
+        console.error("Error fetching profile", err);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   const handleSave = () => {
     setProfile(editedProfile);

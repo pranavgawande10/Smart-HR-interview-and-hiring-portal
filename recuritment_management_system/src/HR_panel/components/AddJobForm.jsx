@@ -7,7 +7,7 @@ const AddJobForm = ({ onClose, onSave }) => {
     description: "",
     location: "",
     vacancies: 1,
-    skillsrequired: [""],
+    skillsRequired: [""],
   });
 
   const handleChange = (e) => {
@@ -16,18 +16,18 @@ const AddJobForm = ({ onClose, onSave }) => {
   };
 
   const handleArrayChange = (index, value) => {
-    const newArray = [...formData.skillsrequired];
+    const newArray = [...formData.skillsRequired];
     newArray[index] = value;
-    setFormData({ ...formData, skillsrequired: newArray });
+    setFormData({ ...formData, skillsRequired: newArray });
   };
 
   const addArrayItem = () => {
-    setFormData({ ...formData, skillsrequired: [...formData.skillsrequired, ""] });
+    setFormData({ ...formData, skillsRequired: [...formData.skillsRequired, ""] });
   };
 
   const removeArrayItem = (index) => {
-    const newArray = formData.skillsrequired.filter((_, i) => i !== index);
-    setFormData({ ...formData, skillsrequired: newArray });
+    const newArray = formData.skillsRequired.filter((_, i) => i !== index);
+    setFormData({ ...formData, skillsRequired: newArray });
   };
 
   const handleSubmit = (e) => {
@@ -36,7 +36,7 @@ const AddJobForm = ({ onClose, onSave }) => {
     // Filter out empty items from arrays
     const cleanedData = {
       ...formData,
-      skillsrequired: formData.skillsrequired.filter(item => item.trim() !== ""),
+      skillsRequired: formData.skillsRequired.filter(item => item.trim() !== ""),
     };
     
     onSave(cleanedData);
@@ -178,6 +178,8 @@ const AddJobForm = ({ onClose, onSave }) => {
               </div>
             </div>
 
+
+
             <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "20px", marginBottom: "20px" }}>
               <div>
                 <label style={{ display: "block", fontSize: "14px", fontWeight: "500", color: "#4b5563", marginBottom: "6px" }}>
@@ -202,12 +204,11 @@ const AddJobForm = ({ onClose, onSave }) => {
               </div>
             </div>
 
-            {/* Skills Required */}
             <div style={{ marginBottom: "30px" }}>
               <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#0f172a", marginBottom: "20px", paddingBottom: "10px", borderBottom: "1px solid #e2e8f0" }}>
                 Skills Required
               </h3>
-              {formData.skillsrequired.map((item, index) => (
+              {formData.skillsRequired.map((item, index) => (
                 <div key={index} style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
                   <input
                     type="text"
@@ -222,7 +223,7 @@ const AddJobForm = ({ onClose, onSave }) => {
                     }}
                     placeholder={`Skill ${index + 1}`}
                   />
-                  {formData.skillsrequired.length > 1 && (
+                  {formData.skillsRequired.length > 1 && (
                     <button
                       type="button"
                       onClick={() => removeArrayItem(index)}

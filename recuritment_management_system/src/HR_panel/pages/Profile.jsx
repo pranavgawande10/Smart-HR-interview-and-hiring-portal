@@ -1,9 +1,6 @@
 // Profile.jsx
 import { useState, useEffect } from "react";
-<<<<<<< HEAD:src/HR_panel/pages/Profile.jsx
-import { 
-  User, Mail,Phone,Building,MapPin,Calendar,Edit2,Save,X,Camera,Briefcase,Globe,Shield,Bell,Lock,LogOut,CheckCircle,AlertCircle
-=======
+import axios from "axios";
 import {
   User,
   Mail,
@@ -26,7 +23,6 @@ import {
   LogOut,
   CheckCircle,
   AlertCircle
->>>>>>> e76d803 (Changed UI):recuritment_management_system/src/HR_panel/pages/Profile.jsx
 } from "lucide-react";
 import PageHeader from "../components/PageHeader";
 
@@ -70,20 +66,44 @@ const Profile = () => {
 
   // Load profile from localStorage
   useEffect(() => {
-    const savedProfile = localStorage.getItem("hrProfile");
-    if (savedProfile) {
-      setProfile(JSON.parse(savedProfile));
-      setFormData(JSON.parse(savedProfile));
-    }
+    const fetchProfile = async () => {
+      try {
+        const res = await axios.get("http://localhost:3000/profile/view", {
+          withCredentials: true,
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+        });
+        const d = res.data;
+        const newProfile = {
+          ...profile,
+          name: d.name || profile.name,
+          email: d.email || profile.email,
+          position: d.role || profile.position,
+          department: d.companyName || profile.department,
+          avatar: d.profilePhoto || profile.avatar,
+        };
+        setProfile(newProfile);
+        setFormData(newProfile);
+      } catch (err) {
+        console.error("Error fetching HR profile", err);
+      }
+    };
+    fetchProfile();
   }, []);
 
-  // Save profile to localStorage
-  const saveProfile = () => {
-    setProfile(formData);
-    localStorage.setItem("hrProfile", JSON.stringify(formData));
-    setIsEditing(false);
-    setShowSuccess(true);
-    setTimeout(() => setShowSuccess(false), 3000);
+  const saveProfile = async () => {
+    try {
+      await axios.patch("http://localhost:3000/profile/edit", formData, {
+        withCredentials: true,
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+      });
+      setProfile(formData);
+      setIsEditing(false);
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+    } catch (err) {
+      console.error("Failed to update profile", err);
+      alert(err.response?.data || "Failed to save profile");
+    }
   };
 
   const handleChange = (e) => {

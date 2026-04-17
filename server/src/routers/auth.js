@@ -6,6 +6,7 @@ const bcrypt =  require("bcrypt");
 const validator = require("validator");
 const jwt = require("jsonwebtoken");
 const sendEmail = require("../utils/sendEmail.js");
+const { userAuth } = require("../middlewares/auth.js");
 
 
 
@@ -97,7 +98,8 @@ authRouter.post("/login", async (req, res) => {
         res.status(200).json({
             message: "Login successful",
             role: user.role,
-            name: user.name
+            name: user.name,
+            token
         });
 
     } catch (error) {
@@ -180,5 +182,29 @@ authRouter.post("/resetpassword", async (req, res) => {
     }
 });
 
+
+authRouter.patch("/changepassword", userAuth, async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        const user = req.user;
+        
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ message: "Both current and new passwords are required" });
+        }
+
+        const isPasswordValid = await user.validatePassword(currentPassword);
+        if (!isPasswordValid) {
+            return res.status(400).json({ message: "Invalid current password" });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        user.password = hashedPassword;
+        await user.save();
+
+        res.status(200).json({ message: "Password changed successfully" });
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+});
 
 module.exports = authRouter;

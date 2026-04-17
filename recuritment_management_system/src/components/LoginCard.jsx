@@ -1,39 +1,42 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { Link , useNavigate} from "react-router-dom";
-const LoginCard = ({ title, role, buttonText, route , ROLE }) => {
+import { Link, useNavigate } from "react-router-dom";
+const LoginCard = ({ title, role, buttonText, route, ROLE }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const getRedirectPath = () => {
-    if (role === "HR" || ROLE === "HR") return "/hr";
-    if (role === "INTERVIEWER" || ROLE === "Interviewer") return "/interviewer";
-    if (role === "CANDIDATE" || ROLE === "Candidate") return "/candidate";
+  const getRedirectPath = (normalizedRole) => {
+    if (normalizedRole.includes("hr")) return "/hr";
+    if (normalizedRole.includes("interviewer")) return "/interviewer";
+    if (normalizedRole.includes("candidate") || normalizedRole.includes("student")) return "/candidate";
     return "/";
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage("");
-    setLoading(true); 
-    
-    try {
+    setLoading(true);
 
+    try {
+      const normalizedRole = (role || ROLE || "").toLowerCase();
       let res;
-      if (role === "Candidate") { 
+
+      if (normalizedRole.includes("candidate") || normalizedRole.includes("student")) {
         res = await axios.post(
           "http://localhost:3001/api/v1/candidates/login",
           { email, password }
         );
-      } else if (role === "Interviewer" || role === "HR Manager") {
+      } else if (normalizedRole.includes("interviewer") || normalizedRole.includes("hr")) {
+        const payloadRole = normalizedRole.includes("hr") ? "HR" : "INTERVIEWER";
         res = await axios.post(
           "http://localhost:3000/login",
-          { email, password ,role}
+          { email, password, role: payloadRole }
         );
       }
+      
 
       setMessage("Login successful ✅");
 
@@ -46,16 +49,18 @@ const LoginCard = ({ title, role, buttonText, route , ROLE }) => {
 
       if (token) {
         localStorage.setItem("token", token);
-        localStorage.setItem("role", role || ROLE);
+        localStorage.setItem("role", role || ROLE || "User");
       }
-      
-      const userName = res?.data?.name ?? res?.data?.user?.name ?? res?.data?.data?.name ?? res?.data?.candidate?.name ?? (role || ROLE);
+
+      const userName = res?.data?.data?.user?.username ?? res?.data?.data?.user?.name ?? res?.data?.name ?? res?.data?.user?.name ?? res?.data?.data?.name ?? res?.data?.candidate?.name ?? (role || ROLE || "User");
       localStorage.setItem("userName", userName);
 
       // Always redirect after a successful login response
-      navigate(getRedirectPath());
+      navigate(getRedirectPath(normalizedRole));
 
-      console.log("User Data:", res.data);
+      if (res && res.data) {
+        console.log("User Data:", res.data);
+      }
 
 
     } catch (error) {
@@ -77,14 +82,7 @@ const LoginCard = ({ title, role, buttonText, route , ROLE }) => {
       <div className="absolute top-[-10%] right-[-5%] w-96 h-96 bg-indigo-600 rounded-full mix-blend-screen filter blur-[100px] opacity-20 animate-blob"></div>
       <div className="absolute bottom-[-10%] left-[-5%] w-96 h-96 bg-purple-600 rounded-full mix-blend-screen filter blur-[100px] opacity-20 animate-blob animation-delay-2000"></div>
 
-        <h2 className="text-2xl font-bold text-center mb-2">
-          {title}
-        </h2>
-        <p className="text-center text-gray-500 mb-6">
-          Login as {role}
-        </p>
-        <h2 className="text-2xl font-bold text-center mb-2">{title}</h2>
-        <p className="text-center text-gray-500 mb-6">Login as {ROLE}</p>
+
       <div className="glass-card p-8 rounded-2xl shadow-2xl w-full max-w-md relative z-10 border border-slate-700/50">
 
         <h2 className="text-3xl font-extrabold text-white text-center mb-2 outfit-font">{title}</h2>
@@ -119,10 +117,7 @@ const LoginCard = ({ title, role, buttonText, route , ROLE }) => {
         </form>
 
         {message && (
-          // <p className="text-center mt-4 text-sm text-red-600">
-          //   {message}
-          // </p>
-          // <p className="text-center mt-6 text-sm font-medium text-rose-400 bg-rose-500/10 py-2 rounded-lg border border-rose-500/20">{message}</p>
+          <p className="text-center mt-6 text-sm font-medium text-rose-400 bg-rose-500/10 py-2 rounded-lg border border-rose-500/20">{message}</p>
         )}
 
         <p className="text-center text-sm text-slate-400 mt-6">

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Search, Calendar, Briefcase, Plus, X, Clock, Video, FileText, CheckCircle, ChevronDown, User, MapPin, Mail } from "lucide-react";
+import axios from "axios";
 
 const InterviewerApplications = () => {
   const [interviews, setInterviews] = useState([]);
@@ -19,36 +20,36 @@ const InterviewerApplications = () => {
   });
 
   const gradient = "linear-gradient(135deg, rgb(20, 184, 166) 0%, rgb(14, 165, 233) 100%)";
-  const currentInterviewer = "John Doe (Tech Lead)";
 
-  const fetchApps = () => {
-    // We parse 'hrInterviews' mapping assigning candidates from HR
-    const saved = JSON.parse(localStorage.getItem("hrInterviews") || "[]");
-    
-    // Fallback if none so we can see the UI layout
-    if (saved.length === 0) {
-      const dummyApps = [
-        {
-          id: 101, candidateName: "Emma Watson", position: "Data Scientist", company: "Company Inc", roundName: "Technical Round", status: "Assigned", assignedDate: "2024-04-10", interviewers: [currentInterviewer]
-        },
-        {
-          id: 102, candidateName: "James Bond", position: "Security Analyst", company: "Company Inc", roundName: "System Design", status: "Assigned", assignedDate: "2024-04-11", interviewers: [currentInterviewer]
-        }
-      ];
-      setInterviews(dummyApps);
-      localStorage.setItem("hrInterviews", JSON.stringify(dummyApps));
-    } else {
-      // Filter ones where interviewer is assigned
-      const myApps = saved.filter(i => (i.interviewers || []).includes(currentInterviewer) || i.interviewer === currentInterviewer);
-      setInterviews(myApps);
+  const getAxiosConfig = () => ({
+    withCredentials: true,
+    headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+  });
+
+  const fetchApps = async () => {
+    try {
+      const res = await axios.get("http://localhost:3001/api/v1/interviewer/my-interviews", getAxiosConfig());
+      const mapped = (res.data.interviews || []).map(i => ({
+        id: i._id,
+        candidateName: i.candidate?.name || "Unknown",
+        position: i.job?.title || "Role",
+        company: i.job?.company || "",
+        roundName: `Round ${i.roundNumber}${i.isFinalRound ? ' (Final)' : ''}`,
+        status: i.status === "ASSIGNED" || i.status === "PENDING" ? "Assigned" : i.status === "SCHEDULED" ? "Scheduled" : i.status === "COMPLETED" ? "Completed" : i.status,
+        date: i.scheduledAt ? new Date(i.scheduledAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : "",
+        time: i.scheduledAt ? new Date(i.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "",
+        assignedDate: new Date(i.createdAt).toLocaleDateString()
+      }));
+      setInterviews(mapped);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
     fetchApps();
-    window.addEventListener("localInterviewsChanged", fetchApps);
-    return () => window.removeEventListener("localInterviewsChanged", fetchApps);
   }, []);
 
   const openScheduleModal = (candidate) => {
@@ -57,54 +58,34 @@ const InterviewerApplications = () => {
     setShowModal(true);
   };
 
-  const handleScheduleSubmit = () => {
+  const handleScheduleSubmit = async () => {
     if (!scheduleData.date || !scheduleData.time) {
       alert("Please select a date and time to schedule.");
       return;
     }
 
-    const updated = interviews.map(i => {
-      if (i.id === selectedCandidate.id) {
-        return { 
-          ...i, 
-          status: "Scheduled", 
-          date: scheduleData.date, 
-          time: scheduleData.time, 
-          duration: scheduleData.duration,
-          type: scheduleData.mode,
-          link: scheduleData.link,
-          notes: scheduleData.notes
-        };
-      }
-      return i;
-    });
-
-    setInterviews(updated);
-    // Persist globally
-    const hrInts = JSON.parse(localStorage.getItem("hrInterviews") || "[]");
-    const merged = hrInts.map(h => {
-      const u = updated.find(x => x.id === h.id);
-      return u ? u : h;
-    });
-    // In case dummy data wasn't in hrInts
-    updated.forEach(u => {
-      if (!merged.find(m => m.id === u.id)) merged.push(u);
-    });
-    localStorage.setItem("hrInterviews", JSON.stringify(merged));
-    window.dispatchEvent(new Event("localInterviewsChanged"));
-    
-    setShowModal(false);
+    try {
+      await axios.post(`http://localhost:3001/api/v1/interviewer/schedule/${selectedCandidate.id}`, {
+        date: scheduleData.date,
+        time: scheduleData.time,
+        mode: scheduleData.mode,
+        meetingLink: scheduleData.link,
+        location: scheduleData.notes
+      }, getAxiosConfig());
+      
+      setShowModal(false);
+      fetchApps();
+      alert("Interview Successfully Scheduled!");
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || "Failed to schedule interview.");
+    }
   };
 
-  const updateStatus = (id, newStatus) => {
-    const updated = interviews.map(i => i.id === id ? { ...i, status: newStatus } : i);
-    setInterviews(updated);
-    
-    // Persist globally
-    const hrInts = JSON.parse(localStorage.getItem("hrInterviews") || "[]");
-    const merged = hrInts.map(h => h.id === id ? { ...h, status: newStatus } : h);
-    localStorage.setItem("hrInterviews", JSON.stringify(merged));
-    window.dispatchEvent(new Event("localInterviewsChanged"));
+  const updateStatus = async (id, newStatus) => {
+    // Usually status is handled automatically in the backend. 
+    // If we wanted to locally update just for UI before refresh:
+    // setInterviews(interviews.map(i => i.id === id ? { ...i, status: newStatus } : i));
   };
 
   const filtered = useMemo(() => {

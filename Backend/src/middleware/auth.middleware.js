@@ -5,13 +5,13 @@ import jwt from "jsonwebtoken";
 import { ApiError } from "../utils/api-error.js";
 import {asyncHandler} from "../utils/asyncHandler.js";
 
-export const verifyJWT = asyncHandler(async (req, _, next) => {
+export const verifyJWT = asyncHandler(async (req, res, next) => {
   let token;
 
   // ✅ Check cookies (both old + new)
-  if (req.cookies?.accessToken) {
+  if (req.cookies?.accessToken && req.cookies.accessToken !== "null") {
     token = req.cookies.accessToken;
-  } else if (req.cookies?.token) {
+  } else if (req.cookies?.token && req.cookies.token !== "null") {
     token = req.cookies.token; // fallback (old)
   }
 
@@ -20,8 +20,8 @@ export const verifyJWT = asyncHandler(async (req, _, next) => {
     token = req.headers.authorization.split(" ")[1];
   }
 
-  if (!token) {
-    throw new ApiError(401, "You are not logged in!");
+  if (!token || token === "null" || token === "undefined") {
+    return res.status(401).json({ success: false, message: "You are not logged in!" });
   }
 
   try {
@@ -30,13 +30,13 @@ export const verifyJWT = asyncHandler(async (req, _, next) => {
     const user = await User.findById(decodedToken._id).select("-password");
 
     if (!user) {
-      throw new ApiError(401, "User not found");
+      return res.status(401).json({ success: false, message: "User not found" });
     }
 
     req.user = user;
     next();
 
   } catch (error) {
-    throw new ApiError(401, "Invalid access token");
+    return res.status(401).json({ success: false, message: "Invalid access token: " + error.message });
   }
 });

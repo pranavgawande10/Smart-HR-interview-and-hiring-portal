@@ -13,6 +13,7 @@ import {
   RefreshCw,
   MoreVertical
 } from "lucide-react";
+import axios from "axios";
 
 const CandidateInterviews = () => {
   const [interviews, setInterviews] = useState([]);
@@ -32,71 +33,39 @@ const CandidateInterviews = () => {
   });
   const [notification, setNotification] = useState(null);
 
-  useEffect(() => {
-    const savedInterviews = localStorage.getItem("candidateInterviews");
-    if (savedInterviews) {
-      setInterviews(JSON.parse(savedInterviews));
-    } else {
-      const sampleInterviews = [
-        {
-          id: 1,
-          jobTitle: "Software Engineer",
-          company: "Google",
-          interviewer: "John Doe (Tech Lead)",
-          date: "2024-03-25",
-          time: "10:00 AM",
-          duration: "60",
-          type: "video",
-          link: "https://meet.google.com/abc-defg-hij",
-          status: "scheduled",
-          notes: "Technical interview focusing on React and System Design"
-        },
-        {
-          id: 2,
-          jobTitle: "Backend Developer",
-          company: "Amazon",
-          interviewer: "Jane Smith (HR)",
-          date: "2024-03-26",
-          time: "2:00 PM",
-          duration: "45",
-          type: "phone",
-          phoneNumber: "+91 98765 43210",
-          status: "scheduled",
-          notes: "HR Round - Discussion about experience"
-        },
-        {
-          id: 3,
-          jobTitle: "Frontend Developer",
-          company: "Microsoft",
-          interviewer: "Emily Davis (Design Lead)",
-          date: "2024-03-20",
-          time: "11:30 AM",
-          duration: "60",
-          type: "video",
-          link: "https://meet.google.com/xyz-abcd-efg",
-          status: "completed",
-          notes: "Portfolio review completed",
-          feedback: "Strong technical skills. Moving to next round."
-        },
-        {
-          id: 4,
-          jobTitle: "DevOps Engineer",
-          company: "Infosys",
-          interviewer: "David Miller (DevOps Lead)",
-          date: "2024-03-18",
-          time: "3:00 PM",
-          duration: "90",
-          type: "inperson",
-          location: "Infosys Campus, Pune",
-          status: "completed",
-          notes: "Technical and HR discussion",
-          feedback: "Excellent performance. Congratulations!"
-        }
-      ];
-      setInterviews(sampleInterviews);
-      localStorage.setItem("candidateInterviews", JSON.stringify(sampleInterviews));
+  const getAxiosConfig = () => ({
+    withCredentials: true,
+    headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+  });
+
+  const fetchInterviews = async () => {
+    try {
+      const res = await axios.get("http://localhost:3001/api/v1/candidates/my-interviews", getAxiosConfig());
+      const mapped = res.data.interviews.map(inv => ({
+        id: inv._id,
+        jobTitle: inv.job?.title || "Unknown Base",
+        company: inv.job?.company || "Unknown Company",
+        interviewer: inv.interviewer?.name || "Pending Interviewer",
+        date: inv.scheduledAt ? new Date(inv.scheduledAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : "Not Set",
+        time: inv.scheduledAt ? new Date(inv.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Not Set",
+        duration: "60",
+        type: (inv.mode || "video").toLowerCase(),
+        link: inv.meetingLink || "",
+        location: inv.location || "",
+        status: inv.status === "SCHEDULED" && inv.candidateResponse === "REQUEST_RESCHEDULE" ? "reschedule_requested" : inv.status === "CANCELLED" ? "cancellation_requested" : inv.status.toLowerCase(),
+        notes: inv.location || "Pending instructions.",
+        feedback: inv.feedback || ""
+      }));
+      setInterviews(mapped);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchInterviews();
   }, []);
 
   const showNotification = (message, type = "success") => {
@@ -117,68 +86,52 @@ const CandidateInterviews = () => {
     return true;
   };
 
-  const handleRescheduleRequest = () => {
+  const handleRescheduleRequest = async () => {
     if (!rescheduleData.newDate || !rescheduleData.newTime || !rescheduleData.reason) {
       showNotification("Please fill all fields", "error");
       return;
     }
 
-    const updatedInterviews = interviews.map(interview => {
-      if (interview.id === selectedInterviewForAction.id) {
-        return {
-          ...interview,
-          status: "reschedule_requested",
-          rescheduleRequest: {
-            requestedDate: rescheduleData.newDate,
-            requestedTime: rescheduleData.newTime,
-            reason: rescheduleData.reason,
-            requestedAt: new Date().toISOString()
-          }
-        };
-      }
-      return interview;
-    });
-
-    setInterviews(updatedInterviews);
-    localStorage.setItem("candidateInterviews", JSON.stringify(updatedInterviews));
-    sendEmailNotification(selectedInterviewForAction, "reschedule", rescheduleData);
-    showNotification("Reschedule request sent successfully!", "success");
-    
-    setShowRescheduleModal(false);
-    setSelectedInterviewForAction(null);
-    setRescheduleData({ newDate: "", newTime: "", reason: "" });
-    setShowDropdown(null);
+    try {
+      await axios.patch(`http://localhost:3001/api/v1/candidates/respond/${selectedInterviewForAction.id}`, {
+        response: "REQUEST_RESCHEDULE",
+        reason: `${rescheduleData.newDate} ${rescheduleData.newTime} - ${rescheduleData.reason}`
+      }, getAxiosConfig());
+      
+      showNotification("Reschedule request sent successfully!", "success");
+      fetchInterviews();
+      setShowRescheduleModal(false);
+      setSelectedInterviewForAction(null);
+      setRescheduleData({ newDate: "", newTime: "", reason: "" });
+      setShowDropdown(null);
+    } catch (err) {
+      console.error(err);
+      showNotification("Failed to send reschedule request", "error");
+    }
   };
 
-  const handleCancelRequest = () => {
+  const handleCancelRequest = async () => {
     if (!cancelData.reason) {
       showNotification("Please provide a reason", "error");
       return;
     }
 
-    const updatedInterviews = interviews.map(interview => {
-      if (interview.id === selectedInterviewForAction.id) {
-        return {
-          ...interview,
-          status: "cancellation_requested",
-          cancelRequest: {
-            reason: cancelData.reason,
-            requestedAt: new Date().toISOString()
-          }
-        };
-      }
-      return interview;
-    });
-
-    setInterviews(updatedInterviews);
-    localStorage.setItem("candidateInterviews", JSON.stringify(updatedInterviews));
-    sendEmailNotification(selectedInterviewForAction, "cancel", cancelData);
-    showNotification("Cancellation request sent successfully!", "success");
-    
-    setShowCancelModal(false);
-    setSelectedInterviewForAction(null);
-    setCancelData({ reason: "" });
-    setShowDropdown(null);
+    try {
+      await axios.patch(`http://localhost:3001/api/v1/candidates/respond/${selectedInterviewForAction.id}`, {
+        response: "REJECTED",
+        reason: cancelData.reason
+      }, getAxiosConfig());
+      
+      showNotification("Cancellation request sent successfully!", "success");
+      fetchInterviews();
+      setShowCancelModal(false);
+      setSelectedInterviewForAction(null);
+      setCancelData({ reason: "" });
+      setShowDropdown(null);
+    } catch (err) {
+      console.error(err);
+      showNotification("Failed to cancel interview", "error");
+    }
   };
 
   const getStatusBadge = (status) => {

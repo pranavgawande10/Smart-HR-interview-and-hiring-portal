@@ -10,6 +10,7 @@ import {
   Eye,
   ChevronRight
 } from "lucide-react";
+import axios from "axios";
 
 const CandidateApplications = () => {
   const [applications, setApplications] = useState([]);
@@ -18,94 +19,43 @@ const CandidateApplications = () => {
   const [filter, setFilter] = useState("all");
 
   useEffect(() => {
-    // Load applications from localStorage
-    const savedApplications = localStorage.getItem("candidateApplications");
-    if (savedApplications) {
-      setApplications(JSON.parse(savedApplications));
-    } else {
-      // Sample applications data
-      const sampleApplications = [
-        {
-          id: 1,
-          jobTitle: "Software Engineer",
-          company: "Google",
-          location: "Mumbai, India",
-          appliedDate: "2024-03-15",
-          status: "reviewing",
-          salary: "₹4,500/hour",
-          jobType: "Full Time",
-          experience: "Junior Level",
-          applicationStatus: "Application under review",
-          interviewDate: null,
-          feedback: null
-        },
-        {
-          id: 2,
-          jobTitle: "Backend Developer",
-          company: "Amazon",
-          location: "Hyderabad, India",
-          appliedDate: "2024-03-14",
-          status: "interview",
-          salary: "₹5,000/hour",
-          jobType: "Full Time",
-          experience: "Mid Level",
-          applicationStatus: "Interview scheduled",
-          interviewDate: "2024-03-25",
-          interviewTime: "10:00 AM",
-          interviewLink: "https://meet.google.com/abc-defg-hij",
-          feedback: null
-        },
-        {
-          id: 3,
-          jobTitle: "Frontend Developer",
-          company: "Microsoft",
-          location: "Bangalore, India",
-          appliedDate: "2024-03-13",
-          status: "shortlisted",
-          salary: "₹6,000/hour",
-          jobType: "Full Time",
-          experience: "Senior Level",
-          applicationStatus: "Shortlisted for next round",
-          interviewDate: "2024-03-28",
-          interviewTime: "2:00 PM",
-          interviewLink: "https://meet.google.com/xyz-abcd-efg",
-          feedback: null
-        },
-        {
-          id: 4,
-          jobTitle: "UI/UX Designer",
-          company: "TCS",
-          location: "Pune, India",
-          appliedDate: "2024-03-10",
-          status: "rejected",
-          salary: "₹3,500/hour",
-          jobType: "Full Time",
-          experience: "Junior Level",
-          applicationStatus: "Application not selected",
-          interviewDate: null,
-          feedback: "We appreciate your interest but have moved forward with other candidates."
-        },
-        {
-          id: 5,
-          jobTitle: "DevOps Engineer",
-          company: "Infosys",
-          location: "Chennai, India",
-          appliedDate: "2024-03-08",
-          status: "hired",
-          salary: "₹7,000/hour",
-          jobType: "Full Time",
-          experience: "Senior Level",
-          applicationStatus: "Offer extended - Congratulations!",
-          interviewDate: "2024-03-20",
-          interviewTime: "11:00 AM",
-          interviewLink: "https://meet.google.com/ijk-lmno-pqr",
-          feedback: "Excellent technical skills and communication. Welcome to the team!"
-        }
-      ];
-      setApplications(sampleApplications);
-      localStorage.setItem("candidateApplications", JSON.stringify(sampleApplications));
-    }
-    setLoading(false);
+    const fetchApps = async () => {
+      try {
+        const res = await axios.get("http://localhost:3001/api/v1/application/my-applications", {
+          withCredentials: true,
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+        });
+        
+        const mapped = res.data.applications.map(app => {
+          let mappedStatus = "reviewing";
+          if (app.status === "rejected") mappedStatus = "rejected";
+          else if (app.status === "selected") mappedStatus = "hired";
+          else if (app.status === "shortlisted") mappedStatus = "shortlisted";
+
+          return {
+            id: app._id,
+            jobTitle: app.job?.title || "Unknown Role",
+            company: app.job?.company || "Company",
+            location: app.job?.location || "Remote",
+            appliedDate: app.createdAt,
+            status: mappedStatus,
+            salary: "Competitive",
+            jobType: "Full Time",
+            experience: app.job?.experience || "N/A",
+            applicationStatus: `Application is ${app.status}`,
+            interviewDate: null,
+            feedback: null
+          };
+        });
+
+        setApplications(mapped);
+      } catch (err) {
+        console.error("Error fetching applications:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchApps();
   }, []);
 
   const getStatusBadge = (status) => {

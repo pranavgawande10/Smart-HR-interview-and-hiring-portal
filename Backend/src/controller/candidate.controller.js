@@ -41,17 +41,12 @@ const generateAccessAndRefreshTokens = async (userId) => {
 };
 
 const registerUser = asyncHandler(async (req, res) => {
-<<<<<<< HEAD
-  const { email, name, password , role} = req.body;
 
-  if ([email, name, password , role].some((field) => !field?.trim())) {
-=======
-  const { email, name, password } = req.body;
+  const { email, name, password, role } = req.body;
  
   if ([email, name, password].some((field) => !field?.trim())) {
->>>>>>> 691fa71 (connect frontend to server)
     throw new ApiError(400, "All fields are required");
-  }
+  } 
 
   const existedUser = await User.findOne({
     $or: [ { email }],
@@ -87,7 +82,7 @@ const registerUser = asyncHandler(async (req, res) => {
     email,
     name,
     password : passwordHash,
-    role,
+    role: role?.toUpperCase(),
     // profilePhoto: profilePhoto.url,
   });
 
@@ -370,7 +365,22 @@ export {
   updateProfilePhoto,
 };
 
+export const getMyInterviews = async (req, res) => {
+  try {
+    const interviews = await Interview.find({ candidate: req.user._id })
+      .populate("job", "title company location")
+      .populate("interviewer", "name email")
+      .sort({ scheduledAt: 1 });
 
+    res.status(200).json({
+      success: true,
+      count: interviews.length,
+      interviews
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
 export const respondToInterview = async (req, res) => {
   try {

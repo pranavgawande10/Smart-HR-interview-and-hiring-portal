@@ -32,13 +32,14 @@ const ForgotPass = ({ role }) => {
 
       if (role === "Candidate") {
         res = await axios.post(
-          "http://localhost:3001/api/v1/candidates/forget-password",
+          "http://localhost:3000/api/v1/auth/forgotpassword",
           { email, newPassword }
         );
-      } else if (role === "Hr" || role === "Interviewer") {
-        res = await axios.post("http://localhost:3000/forgotpassword", {
+      } else {
+        res = await axios.post("http://localhost:3000/api/v1/auth/forgotpassword", {
           email,
           newPassword,
+          role,
         });
       }
 

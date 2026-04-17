@@ -501,7 +501,9 @@ export const getShortlistedApplications = async (req, res) => {
         roundsCompleted: completedRounds,
         lastRound: lastInterview.roundNumber,
         isFinalRound: lastInterview.isFinalRound,
-        lastResult: lastInterview.result
+        lastResult: lastInterview.result,
+        lastInterviewId: lastInterview._id,
+        assignedInterviewerId: lastInterview.interviewer
       });
     }
 

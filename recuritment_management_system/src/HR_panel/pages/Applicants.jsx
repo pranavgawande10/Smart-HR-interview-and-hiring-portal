@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { FileText, ChevronDown } from "lucide-react";
+import axios from "axios";
 
 const Applicants = () => {
   const [jobs, setJobs] = useState([]);
@@ -12,83 +13,74 @@ const Applicants = () => {
   const [selectedApplicantForRound, setSelectedApplicantForRound] = useState(null);
   const [roundData, setRoundData] = useState({ roundName: "", isFinalRound: false });
 
-  // Load data
+  const getAxiosConfig = () => ({
+    withCredentials: true,
+    headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+  });
+
+  const fetchData = async () => {
+    try {
+      // 1. Fetch Jobs from port 3000
+      const jobsRes = await axios.get("http://localhost:3000/job/myjobs", getAxiosConfig());
+      const fetchedJobs = jobsRes.data.map(j => ({
+        id: j._id,
+        title: j.title,
+        company: j.companyName || "Your Company",
+        location: j.location,
+        vacancies: j.vacancies
+      }));
+      setJobs(fetchedJobs);
+
+      // 2. Fetch Applicants from port 3001
+      // const appsPromises = fetchedJobs.map(job =>
+      //   axios.get(`http://localhost:3001/api/v1/application/job/${job._id}`, getAxiosConfig())
+      //     .then(res => {
+      //       return res.data.applications.map(app => ({
+      //         id: app._id,
+      //         name: app.fullName,
+      //         jobId: app.job,
+      //         status: app.status === "applied" ? "pending" : app.status,
+      //         resumeUrl: app.resume,
+      //         rounds: app.lastRoundName !== "None" ? [{ roundName: app.lastRoundName }] : [],
+      //         assignedInterviewerId: app.assignedInterviewerId || null,
+      //         lastInterviewId: app.lastInterviewId || null
+      //       }));
+      //     }).catch(err => [])
+      // );
+
+      const appsPromises = fetchedJobs.map(job =>
+  axios.get(`http://localhost:3001/api/v1/application/job/${job.id}`, getAxiosConfig())
+    .then(res => {
+      return res.data.applications.map(app => ({
+        id: app._id,
+        name: app.fullName,
+        jobId: app.job,
+        status: app.status === "applied" ? "pending" : app.status,
+        resumeUrl: app.resume,
+        rounds: app.lastRoundName !== "None" ? [{ roundName: app.lastRoundName }] : [],
+        assignedInterviewerId: app.assignedInterviewerId || null,
+        lastInterviewId: app.lastInterviewId || null
+      }));
+    }).catch(err => [])
+);
+       
+      const appsArrays = await Promise.all(appsPromises);
+      setApplicants(appsArrays.flat());
+
+      // 3. Fetch Interviewers from port 3001
+      const intRes = await axios.get("http://localhost:3001/api/v1/hr/interviewers", getAxiosConfig());
+      setInterviewers(intRes.data.interviewers.map(i => ({
+        id: i._id,
+        name: i.name
+      })));
+
+    } catch (err) {
+      console.error("Failed to load applicants", err);
+    }
+  };
+
   useEffect(() => {
-    // 2 Dummy Job Postings as requested
-    const sampleJobs = [
-      {
-        id: "job1",
-        title: "Senior Product Designer",
-        company: "Google",
-        location: "San Francisco, CA",
-        vacancies: 2
-      },
-      {
-        id: "job2",
-        title: "Full Stack Engineer",
-        company: "Microsoft",
-        location: "Seattle, WA",
-        vacancies: 5
-      }
-    ];
-    setJobs(sampleJobs);
-
-    // Dummy applicants (2-3 per job)
-    const sampleApplicants = [
-      {
-        id: 1,
-        name: "Sarah Johnson",
-        jobId: "job1",
-        status: "pending",
-        resumeUrl: "#",
-        rounds: [],
-        assignedInterviewerId: null
-      },
-      {
-        id: 2,
-        name: "Michael Chen",
-        jobId: "job1",
-        status: "Shortlisted",
-        resumeUrl: "#",
-        rounds: [{ roundName: "Technical Screen", isFinalRound: false }],
-        assignedInterviewerId: 1
-      },
-      {
-        id: 3,
-        name: "Elena Rodriguez",
-        jobId: "job1",
-        status: "Rejected",
-        resumeUrl: "#",
-        rounds: [],
-        assignedInterviewerId: null
-      },
-      {
-        id: 4,
-        name: "James Wilson",
-        jobId: "job2",
-        status: "pending",
-        resumeUrl: "#",
-        rounds: [],
-        assignedInterviewerId: null
-      },
-      {
-        id: 5,
-        name: "Emily Davis",
-        jobId: "job2",
-        status: "Shortlisted",
-        resumeUrl: "#",
-        rounds: [{ roundName: "Behavioral Round", isFinalRound: false }, { roundName: "System Design", isFinalRound: true }],
-        assignedInterviewerId: 2
-      }
-    ];
-    setApplicants(sampleApplicants);
-
-    // Sample interviewers
-    const sampleInterviewers = [
-      { id: 1, name: "John Doe", role: "Senior Technical Interviewer" },
-      { id: 2, name: "Jane Smith", role: "HR Interviewer" }
-    ];
-    setInterviewers(sampleInterviewers);
+    fetchData();
   }, []);
 
   // Helpers
@@ -96,18 +88,44 @@ const Applicants = () => {
     setActiveTabs(prev => ({ ...prev, [jobId]: tab }));
   };
 
-  const updateApplicantStatus = (applicantId, newStatus) => {
-    const updated = applicants.map(app => 
-      app.id === applicantId ? { ...app, status: newStatus } : app
-    );
-    setApplicants(updated);
+  const updateApplicantStatus = async (applicantId, newStatus) => {
+    try {
+      const backendStatus = newStatus === "pending" ? "applied" : newStatus;
+      await axios.patch(
+        `http://localhost:3001/api/v1/application/status/${applicantId}`,
+        { status: backendStatus },
+        getAxiosConfig()
+      );
+      
+      const updated = applicants.map(app => 
+        app.id === applicantId ? { ...app, status: newStatus } : app
+      );
+      setApplicants(updated);
+    } catch (err) {
+      console.error("Failed to update status", err);
+      alert("Status update failed");
+    }
   };
 
-  const assignInterviewer = (applicantId, interviewerId) => {
-    const updated = applicants.map(app => 
-      app.id === applicantId ? { ...app, assignedInterviewerId: interviewerId } : app
-    );
-    setApplicants(updated);
+  const assignInterviewer = async (applicantId, interviewId, interviewerId) => {
+    if (!interviewId) {
+      alert("No active interview round exists for this candidate. Create a round first!");
+      return;
+    }
+    if (!interviewerId) return;
+
+    try {
+      await axios.put(
+        `http://localhost:3001/api/v1/hr/assign-round/${interviewId}`,
+        { interviewerId },
+        getAxiosConfig()
+      );
+      alert("Interviewer manually assigned to the round!");
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || "Failed to assign interviewer");
+    }
   };
 
   const openRoundModal = (applicant) => {
@@ -116,30 +134,33 @@ const Applicants = () => {
     setRoundModalOpen(true);
   };
 
-  const handleSaveRound = () => {
+  const handleSaveRound = async () => {
     if (!selectedApplicantForRound || !roundData.roundName) return;
 
-    const newRound = {
-      roundName: roundData.roundName,
-      isFinalRound: roundData.isFinalRound
-    };
-
-    const updated = applicants.map(app => {
-      if (app.id === selectedApplicantForRound.id) {
-        return {
-          ...app,
-          rounds: [...(app.rounds || []), newRound]
-        };
-      }
-      return app;
-    });
-
-    setApplicants(updated);
-    setRoundModalOpen(false);
+    try {
+      await axios.post(
+        `http://localhost:3001/api/v1/hr/create-round/${selectedApplicantForRound.id}`,
+        {
+          round: "TECHNICAL", // Defaulting to TECHNICAL per backend enum, or could be mapped based on roundName
+          isFinalRound: roundData.isFinalRound
+        },
+        getAxiosConfig()
+      );
+      setRoundModalOpen(false);
+      fetchData(); // Refresh to fetch updated status
+      alert("Round created successfully");
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || "Failed to create round");
+    }
   };
 
   const viewResume = (applicant) => {
-    alert(`Previewing dummy resume for ${applicant.name}... Note: In a real environment, this opens a PDF viewer in a new tab or modal.`);
+    if(applicant.resumeUrl && applicant.resumeUrl !== "#") {
+      window.open(applicant.resumeUrl, "_blank");
+    } else {
+      alert("No valid resume URL attached to this applicant.");
+    }
   };
 
   return (
@@ -361,8 +382,8 @@ const Applicants = () => {
                                   <div style={{ position: "relative", maxWidth: "200px" }}>
                                     <select
                                       value={app.assignedInterviewerId || ""}
-                                      onChange={(e) => assignInterviewer(app.id, parseInt(e.target.value))}
-                                      style={{ padding: "8px 14px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "13px", width: "100%", outline: "none", cursor: "pointer", appearance: "none", paddingRight: "30px" }}
+                                      onChange={(e) => assignInterviewer(app.id, app.lastInterviewId, e.target.value)}
+                                      style={{ padding: "8px 14px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "13px", width: "100%", outline: "none", cursor: "pointer", appearance: "none", paddingRight: "30px", background: "white", color: "#0f172a" }}
                                     >
                                       <option value="">Unassigned</option>
                                       {interviewers.map(int => (
