@@ -60,6 +60,7 @@ const InterviewerProfile = () => {
       };
       setProfile(formatted);
       setEditedProfile(formatted);
+      
 
       // 2. Calculate Active Load
       const intsRes = await axios.get("http://localhost:3001/api/v1/interviewer/my-interviews", getAxiosConfig());

@@ -1,23 +1,28 @@
+// Import necessary modules from React, Lucide icons for UI, and axios for API calls
 import { useState, useEffect } from "react";
 import { FileText, ChevronDown } from "lucide-react";
 import axios from "axios";
 
+// Main component to display and manage applicants for all jobs
 const Applicants = () => {
-  const [jobs, setJobs] = useState([]);
-  const [applicants, setApplicants] = useState([]);
-  const [interviewers, setInterviewers] = useState([]);
-  const [activeTabs, setActiveTabs] = useState({}); // { jobId: "total" | "shortlisted" }
+  // State variables to store fetched data
+  const [jobs, setJobs] = useState([]);               // List of jobs posted by the company
+  const [applicants, setApplicants] = useState([]);   // List of all applicants across jobs
+  const [interviewers, setInterviewers] = useState([]); // List of available interviewers
+  const [activeTabs, setActiveTabs] = useState({});   // Tracks which tab (total/shortlisted/selected) is active per jobId
   
-  // Modals state
+  // Modal state for creating a new interview round
   const [roundModalOpen, setRoundModalOpen] = useState(false);
   const [selectedApplicantForRound, setSelectedApplicantForRound] = useState(null);
   const [roundData, setRoundData] = useState({ roundName: "", isFinalRound: false });
 
+  // Helper function to get axios configuration with authentication token
   const getAxiosConfig = () => ({
     withCredentials: true,
     headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
   });
 
+  // Fetches jobs, applicants, and interviewers from backend APIs
   const fetchData = async () => {
     try {
       // 1. Fetch Jobs from port 3000
@@ -31,38 +36,23 @@ const Applicants = () => {
       }));
       setJobs(fetchedJobs);
 
-      // 2. Fetch Applicants from port 3001
-      // const appsPromises = fetchedJobs.map(job =>
-      //   axios.get(`http://localhost:3001/api/v1/application/job/${job._id}`, getAxiosConfig())
-      //     .then(res => {
-      //       return res.data.applications.map(app => ({
-      //         id: app._id,
-      //         name: app.fullName,
-      //         jobId: app.job,
-      //         status: app.status === "applied" ? "pending" : app.status,
-      //         resumeUrl: app.resume,
-      //         rounds: app.lastRoundName !== "None" ? [{ roundName: app.lastRoundName }] : [],
-      //         assignedInterviewerId: app.assignedInterviewerId || null,
-      //         lastInterviewId: app.lastInterviewId || null
-      //       }));
-      //     }).catch(err => [])
-      // );
-
+      // 2. Fetch Applicants for each job from port 3001
+      // For each job, get its applications and map to a simpler structure
       const appsPromises = fetchedJobs.map(job =>
-  axios.get(`http://localhost:3001/api/v1/application/job/${job.id}`, getAxiosConfig())
-    .then(res => {
-      return res.data.applications.map(app => ({
-        id: app._id,
-        name: app.fullName,
-        jobId: app.job,
-        status: app.status === "applied" ? "pending" : app.status,
-        resumeUrl: app.resume,
-        rounds: app.lastRoundName !== "None" ? [{ roundName: app.lastRoundName }] : [],
-        assignedInterviewerId: app.assignedInterviewerId || null,
-        lastInterviewId: app.lastInterviewId || null
-      }));
-    }).catch(err => [])
-);
+        axios.get(`http://localhost:3001/api/v1/application/job/${job.id}`, getAxiosConfig())
+          .then(res => {
+            return res.data.applications.map(app => ({
+              id: app._id,
+              name: app.fullName,
+              jobId: app.job,
+              status: app.status === "applied" ? "pending" : app.status,
+              resumeUrl: app.resume,
+              rounds: app.lastRoundName !== "None" ? [{ roundName: app.lastRoundName }] : [],
+              assignedInterviewerId: app.assignedInterviewerId || null,
+              lastInterviewId: app.lastInterviewId || null
+            }));
+          }).catch(err => [])
+      );
        
       const appsArrays = await Promise.all(appsPromises);
       setApplicants(appsArrays.flat());
@@ -79,17 +69,20 @@ const Applicants = () => {
     }
   };
 
+  // Fetch all data when component mounts
   useEffect(() => {
     fetchData();
   }, []);
 
-  // Helpers
+  // Helper to change the active tab for a specific job card
   const handleTabChange = (jobId, tab) => {
     setActiveTabs(prev => ({ ...prev, [jobId]: tab }));
   };
 
+  // Updates the status of an applicant (shortlist, select, reject)
   const updateApplicantStatus = async (applicantId, newStatus) => {
     try {
+      // Backend expects "applied" instead of "pending"
       const backendStatus = newStatus === "pending" ? "applied" : newStatus;
       await axios.patch(
         `http://localhost:3001/api/v1/application/status/${applicantId}`,
@@ -97,6 +90,7 @@ const Applicants = () => {
         getAxiosConfig()
       );
       
+      // Optimistically update local state
       const updated = applicants.map(app => 
         app.id === applicantId ? { ...app, status: newStatus } : app
       );
@@ -107,6 +101,7 @@ const Applicants = () => {
     }
   };
 
+  // Assigns an interviewer to an existing interview round
   const assignInterviewer = async (applicantId, interviewId, interviewerId) => {
     if (!interviewId) {
       alert("No active interview round exists for this candidate. Create a round first!");
@@ -121,19 +116,22 @@ const Applicants = () => {
         getAxiosConfig()
       );
       alert("Interviewer manually assigned to the round!");
-      fetchData();
+      fetchData();  // Refresh data to reflect changes
+      console.log(err.response?.data);
     } catch (err) {
       console.error(err);
       alert(err.response?.data?.message || "Failed to assign interviewer");
     }
   };
 
+  // Opens the modal to create a new interview round for a selected applicant
   const openRoundModal = (applicant) => {
     setSelectedApplicantForRound(applicant);
     setRoundData({ roundName: "", isFinalRound: false });
     setRoundModalOpen(true);
   };
 
+  // Saves the new round details and sends request to backend
   const handleSaveRound = async () => {
     if (!selectedApplicantForRound || !roundData.roundName) return;
 
@@ -141,7 +139,7 @@ const Applicants = () => {
       await axios.post(
         `http://localhost:3001/api/v1/hr/create-round/${selectedApplicantForRound.id}`,
         {
-          round: "TECHNICAL", // Defaulting to TECHNICAL per backend enum, or could be mapped based on roundName
+          round: "TECHNICAL", // Defaulting to TECHNICAL per backend enum
           isFinalRound: roundData.isFinalRound
         },
         getAxiosConfig()
@@ -155,6 +153,7 @@ const Applicants = () => {
     }
   };
 
+  // Opens the applicant's resume in a new tab if available
   const viewResume = (applicant) => {
     if(applicant.resumeUrl && applicant.resumeUrl !== "#") {
       window.open(applicant.resumeUrl, "_blank");
@@ -163,10 +162,11 @@ const Applicants = () => {
     }
   };
 
+  // JSX rendering of the entire component
   return (
     <div style={{ padding: "20px", maxWidth: "1200px", margin: "0 auto" }}>
       
-      {/* 1. Page Heading with style matching Dashboard/Interviews */}
+      {/* 1. Page Heading with gradient background matching Dashboard/Interviews style */}
       <div style={{
         marginBottom: "30px",
         padding: "25px",
@@ -184,15 +184,16 @@ const Applicants = () => {
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "30px" }}>
+        {/* Show message if no jobs exist */}
         {jobs.length === 0 && (
           <div style={{ padding: "40px", textAlign: "center", background: "white", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
             <p style={{ color: "#64748b" }}>No active job postings found. Please create a job to view applicants.</p>
           </div>
         )}
 
-        {/* 2. Job Cards with Dummy Data */}
+        {/* 2. Iterate over each job and display a card with tabs and applicant tables */}
         {jobs.map(job => {
-          // Find applicants for this job
+          // Filter applicants for this specific job
           const jobApplicants = applicants.filter(app => app.jobId === job.id);
           const totalApplicants = jobApplicants;
           const shortlistedApplicants = jobApplicants.filter(app => app.status.toLowerCase() === "shortlisted");
@@ -223,7 +224,7 @@ const Applicants = () => {
                 </div>
               </div>
 
-              {/* 3. Two Tabs inside each Job Card */}
+              {/* 3. Three Tabs inside each Job Card: Total, Shortlisted, Selected */}
               <div style={{
                 display: "flex",
                 borderBottom: "1px solid #e2e8f0",
@@ -279,7 +280,7 @@ const Applicants = () => {
                 </button>
               </div>
 
-              {/* Tab Content */}
+              {/* Tab Content - renders different tables based on active tab */}
               <div style={{ padding: "0" }}>
                 
                 {/* TOTAL APPLICANTS TAB */}
@@ -319,6 +320,7 @@ const Applicants = () => {
                                     <FileText size={16} /> View Resume
                                   </button>
                                   
+                                  {/* Dropdown to change applicant status */}
                                   <div style={{ position: "relative" }}>
                                     <select 
                                       value={app.status.toLowerCase()}
@@ -342,7 +344,7 @@ const Applicants = () => {
                   </div>
                 )}
 
-                {/* SHORTLISTED CANDIDATES TAB */}
+                {/* SHORTLISTED CANDIDATES TAB - shows interviewer assignment and round creation */}
                 {currentTab === "shortlisted" && (
                   <div>
                     {shortlistedApplicants.length === 0 ? (
@@ -409,7 +411,7 @@ const Applicants = () => {
                   </div>
                 )}
 
-                {/* SELECTED APPLICANTS TAB */}
+                {/* SELECTED APPLICANTS TAB - displays final selected candidates */}
                 {currentTab === "selected" && (
                   <div>
                     {selectedApplicants.length === 0 ? (
@@ -435,12 +437,12 @@ const Applicants = () => {
                               <tr key={app.id} style={{ borderBottom: "1px solid #e2e8f0", background: "white" }}>
                                 <td style={{ padding: "16px 24px", fontWeight: "500", color: "#0f172a" }}>{app.name}</td>
                                 
-                                {/* Position */}
+                                {/* Position (job title) */}
                                 <td style={{ padding: "16px 24px", color: "#475569" }}>
                                   {job.title}
                                 </td>
 
-                                {/* Status */}
+                                {/* Status badge */}
                                 <td style={{ padding: "16px 24px" }}>
                                   <span style={{
                                     padding: "4px 10px",
@@ -464,7 +466,7 @@ const Applicants = () => {
                                   </span>
                                 </td>
                                 
-                                {/* Actions */}
+                                {/* Actions: View Resume button */}
                                 <td style={{ padding: "16px 24px" }}>
                                   <button onClick={() => viewResume(app)} style={{ background: "#f1f5f9", color: "#475569", border: "none", padding: "8px 14px", borderRadius: "8px", cursor: "pointer", fontSize: "13px", fontWeight: "500", display: "flex", alignItems: "center", gap: "6px" }}>
                                     <FileText size={16} /> View Resume
@@ -484,7 +486,7 @@ const Applicants = () => {
         })}
       </div>
 
-      {/* Create Round Modal */}
+      {/* Create Round Modal - appears when "Create Round" button is clicked */}
       {roundModalOpen && selectedApplicantForRound && (
         <div style={{
           position: "fixed",
@@ -503,6 +505,7 @@ const Applicants = () => {
           }}>
             <h3 style={{ margin: "0 0 20px 0", fontSize: "20px", color: "#0f172a" }}>Create Round for {selectedApplicantForRound.name}</h3>
             
+            {/* Round name input */}
             <div style={{ marginBottom: "20px" }}>
               <label style={{ display: "block", marginBottom: "8px", fontWeight: "500", fontSize: "14px", color: "#475569" }}>Round Name</label>
               <input 
@@ -514,6 +517,7 @@ const Applicants = () => {
               />
             </div>
             
+            {/* Checkbox for final round */}
             <div style={{ marginBottom: "24px" }}>
               <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
                 <input 
@@ -526,6 +530,7 @@ const Applicants = () => {
               </label>
             </div>
 
+            {/* Modal action buttons */}
             <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
               <button 
                 onClick={() => setRoundModalOpen(false)}

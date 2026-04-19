@@ -20,35 +20,81 @@ const CandidateProfile = () => {
 
   const [editedProfile, setEditedProfile] = useState({ ...profile });
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const res = await axios.get("http://localhost:3001/api/v1/candidates/current-user", {
+useEffect(() => {
+  setEditedProfile(profile);
+}, [profile]);
+
+  // useEffect(() => {
+  //   const fetchProfile = async () => {
+  //     try {
+  //       const res = await axios.get("http://localhost:3001/api/v1/candidates/current-user", {
+  //         withCredentials: true,
+  //         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+  //       });
+  //        console.log(res)
+
+  //       const user = res.data.data;
+  //       const newProfile = {
+  //         name: user.name || "Unknown",
+  //         email: user.email || "",
+  //         phone: user.phone || "Not Provided",
+  //         location: "Not Provided",
+  //         title: "Candidate",
+  //         experience: "Not Provided",
+  //         education: "Not Provided",
+  //         skills: [],
+  //         bio: "Passionate candidate looking for new opportunities.",
+  //         resume: user.resume || "No resume uploaded",
+  //         profilePhoto: user.profilePhoto || null,
+  //       };
+  //       setProfile(newProfile);
+  //       setEditedProfile(newProfile);
+  //     } catch (err) {
+  //       console.error("Error fetching profile", err);
+  //     }
+  //   };
+  //   fetchProfile();
+  // }, []);
+
+useEffect(() => {
+  const fetchProfile = async () => {
+    try {
+      const res = await axios.get(
+        "http://localhost:3001/api/v1/candidates/current-user",
+        {
           withCredentials: true,
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-        });
-        const user = res.data.data;
-        const newProfile = {
-          name: user.name || "Unknown",
-          email: user.email || "",
-          phone: user.phone || "Not Provided",
-          location: "Not Provided",
-          title: "Candidate",
-          experience: "Not Provided",
-          education: "Not Provided",
-          skills: [],
-          bio: "Passionate candidate looking for new opportunities.",
-          resume: user.resume || "No resume uploaded",
-          profilePhoto: user.profilePhoto || null,
-        };
-        setProfile(newProfile);
-        setEditedProfile(newProfile);
-      } catch (err) {
-        console.error("Error fetching profile", err);
-      }
-    };
-    fetchProfile();
-  }, []);
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        }
+      );
+      
+      console.log("API RESPONSE:", res.data);
+
+      // 🔥 FIX: handle different backend formats safely
+      const user = res.data.message || res.data.data || res.data.user || res.data;
+
+      const newProfile = {
+        name: user.name || "Unknown",
+        email: user.email || "",
+        phone: user.phone || "Not Provided",
+        location: user.location || "Not Provided",
+        title: user.title || "Candidate",
+        experience: user.experience || "Not Provided",
+        education: user.education || "Not Provided",
+        skills: user.skills || [],
+        bio: user.bio || "Passionate candidate looking for new opportunities.",
+        resume: user.resume || "No resume uploaded",
+        profilePhoto: user.profilePhoto || null,
+      };
+
+      setProfile(newProfile);
+      setEditedProfile(newProfile); // keep sync
+    } catch (err) {
+      console.error("Error fetching profile", err);
+    }
+  };
+
+  fetchProfile();
+}, []);
 
   const handleSave = () => {
     setProfile(editedProfile);

@@ -1,8 +1,8 @@
 const express = require("express");
 const authRouter = express.Router();
-const User  = require("../models/user.js");
-const {signupValidation} = require("../utils/validation.js");
-const bcrypt =  require("bcrypt");
+const User = require("../models/user.js");
+const { signupValidation } = require("../utils/validation.js");
+const bcrypt = require("bcrypt");
 const validator = require("validator");
 const jwt = require("jsonwebtoken");
 const sendEmail = require("../utils/sendEmail.js");
@@ -10,30 +10,30 @@ const { userAuth } = require("../middlewares/auth.js");
 
 
 
-authRouter.post("/signup" , async (req,res)=>{
+authRouter.post("/signup", async (req, res) => {
     // console.log(req.body);
-    
 
-    try{
+
+    try {
         //validation of data
         signupValidation(req);
 
         //encrypt the password
-        const { 
-  name, 
-  email, 
-  password, 
-  companyName, 
-  role, 
-  skills, 
-  experienceYears 
-} = req.body;
-        const passwordHash = await bcrypt.hash(password , 10);
+        const {
+            name,
+            email,
+            password,
+            companyName,
+            role,
+            skills,
+            experienceYears
+        } = req.body;
+        const passwordHash = await bcrypt.hash(password, 10);
 
-        
+
 
         //create a new instance of user model
-        const user = new User({
+        const user = new User({ 
 
 
             name,
@@ -44,16 +44,15 @@ authRouter.post("/signup" , async (req,res)=>{
             skills: role === "INTERVIEWER" ? skills : undefined,
             experienceYears: role === "INTERVIEWER" ? experienceYears : undefined
         });
- 
+
         const data = req.body;
         await user.save();
         res.send("user data saved successfully!");
     }
-    catch(err)
-    {
+    catch (err) {
         res.status(400).send("data not saved!" + err);
     }
-    
+
 });
 
 authRouter.post("/login", async (req, res) => {
@@ -107,9 +106,9 @@ authRouter.post("/login", async (req, res) => {
     }
 });
 
-authRouter.post("/logout" , (req,res) =>{
-    res.cookie("token" , null ,{
-        expires :new Date(Date.now()), 
+authRouter.post("/logout", (req, res) => {
+    res.cookie("token", null, {
+        expires: new Date(Date.now()),
     });
 
     res.send("Logout successfully!");
@@ -187,7 +186,7 @@ authRouter.patch("/changepassword", userAuth, async (req, res) => {
     try {
         const { currentPassword, newPassword } = req.body;
         const user = req.user;
-        
+
         if (!currentPassword || !newPassword) {
             return res.status(400).json({ message: "Both current and new passwords are required" });
         }

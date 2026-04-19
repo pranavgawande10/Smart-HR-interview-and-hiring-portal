@@ -45,25 +45,25 @@ export const updateCapacity = async (req, res) => {
   }
 };
 
-export const updateSkills = async (req, res) => {
-  try {
-    const userId = req.user._id;
-    const { skills } = req.body;
+// export const updateSkills = async (req, res) => {
+//   try {
+//     const userId = req.user._id;
+//     const { skills } = req.body;
 
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { skills },
-      { new: true }
-    );
+//     const user = await User.findByIdAndUpdate(
+//       userId,
+//       { skills },
+//       { new: true }
+//     );
 
-    res.status(200).json({
-      message: "Skills updated successfully",
-      user,
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
+//     res.status(200).json({
+//       message: "Skills updated successfully",
+//       user,
+//     });
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// };
 
 // export const completeInterview = async (req, res) => {
 //   try {
@@ -115,6 +115,30 @@ export const updateSkills = async (req, res) => {
 //   }
 // };
 
+export const updateSkills = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { skills } = req.body;
+
+    if (!skills || !Array.isArray(skills)) {
+      return res.status(400).json({ message: "Skills must be an array" });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $set: { skills } }, // ✅ explicit update
+      { new: true, runValidators: true }
+    );
+
+    res.status(200).json({
+      message: "Skills updated successfully",
+      user,
+    });
+    
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
 
 export const scheduleInterview = async (req, res) => {
@@ -206,6 +230,7 @@ export const scheduleInterview = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 
 
 export const rescheduleInterview = async (req, res) => {

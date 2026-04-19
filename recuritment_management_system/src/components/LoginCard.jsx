@@ -14,7 +14,7 @@ const LoginCard = ({ title, role, buttonText, route, ROLE }) => {
     if (normalizedRole.includes("candidate") || normalizedRole.includes("student")) return "/candidate";
     return "/";
   };
-
+  //token
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage("");
@@ -36,21 +36,33 @@ const LoginCard = ({ title, role, buttonText, route, ROLE }) => {
           { email, password, role: payloadRole }
         );
       }
-      
+
 
       setMessage("Login successful ✅");
 
-      const token =
+      const token = res?.data?.message?.accessToken ??
         res?.data?.token ??
         res?.data?.accessToken ??
-        res?.data?.data?.token ??
-        res?.data?.data?.accessToken ??
-        "authenticated_dummy_token";
+        res?.data?.data?.token
 
-      if (token) {
-        localStorage.setItem("token", token);
-        localStorage.setItem("role", role || ROLE || "User");
+      if (!token) {
+        setMessage("Token not received from server ❌");
+        return;
       }
+
+      localStorage.setItem("token", token);
+
+      // const token =
+      //   res?.data?.token ??
+      //   res?.data?.accessToken ??
+      //   res?.data?.data?.token ??
+      //   res?.data?.data?.accessToken ??
+      //   "authenticated_dummy_token";
+
+      // if (token) {
+      //   localStorage.setItem("token", token);
+      //   localStorage.setItem("role", role || ROLE || "User");
+      // }
 
       const userName = res?.data?.data?.user?.username ?? res?.data?.data?.user?.name ?? res?.data?.name ?? res?.data?.user?.name ?? res?.data?.data?.name ?? res?.data?.candidate?.name ?? (role || ROLE || "User");
       localStorage.setItem("userName", userName);
@@ -61,7 +73,9 @@ const LoginCard = ({ title, role, buttonText, route, ROLE }) => {
       if (res && res.data) {
         console.log("User Data:", res.data);
       }
-
+      console.log(response.data);
+      // localStorage.removeItem("token");
+      // localStorage.setItem("token", response.data.message.accessToken);
 
     } catch (error) {
       if (error.response) {

@@ -4,6 +4,7 @@ import { X, Upload, FileText, Send, CheckCircle, User, Mail, Phone, AlertCircle,
 import axios from "axios";
 
 const ApplyForm = ({ jobId, jobTitle, companyName, onClose }) => {
+  
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -126,15 +127,23 @@ const ApplyForm = ({ jobId, jobTitle, companyName, onClose }) => {
       formDataToSend.append("resume", formData.resume);
 
       try {
+        // await axios.post(
+        //   `http://localhost:3001/api/v1/application/apply/${jobId}`,
+        //   formData,
+        //   {
+        //     withCredentials: true,
+        //     headers: {
+        //       Authorization: `Bearer ${localStorage.getItem("token")}`,
+        //       "Content-Type": "multipart/form-data"
+        //     }
+        //   }
+        // );
         await axios.post(
           `http://localhost:3001/api/v1/application/apply/${jobId}`,
-          formData,
+          formDataToSend,   // ✅ CORRECT
           {
             withCredentials: true,
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-              "Content-Type": "multipart/form-data"
-            }
+    headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
           }
         );
         setIsSubmitted(true);

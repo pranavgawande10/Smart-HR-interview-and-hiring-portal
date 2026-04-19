@@ -9,7 +9,7 @@ const InterviewerInterviews = () => {
 
   const [showReschedule, setShowReschedule] = useState(false);
   const [selectedInterview, setSelectedInterview] = useState(null);
-  const [rescheduleData, setRescheduleData] = useState({ date: "", time: "", reason: "" });
+  const [rescheduleData, setRescheduleData] = useState({ date: "", time: "" });
 
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackData, setFeedbackData] = useState({
@@ -78,11 +78,12 @@ const InterviewerInterviews = () => {
   //   }
   // };
 
+
+  
   const handleRescheduleSubmit = async () => {
   if (
     !rescheduleData.date?.trim() ||
     !rescheduleData.time?.trim() 
-    // !rescheduleData.reason?.trim()
   ) {
     alert("Please fill all details.");
     return;
@@ -90,11 +91,10 @@ const InterviewerInterviews = () => {
 
   try {
     await axios.put(
-      `http://localhost:3001/api/v1/interviewer/reschedule/${selectedInterview._id}`,
+      `http://localhost:3001/api/v1/interviewer/reschedule/${selectedInterview.id}`,
       {
         date: rescheduleData.date,
         time: rescheduleData.time,
-        // reason: rescheduleData.reason,
       },
       getAxiosConfig()
     );
@@ -103,7 +103,6 @@ const InterviewerInterviews = () => {
     setRescheduleData({
       date: "",
       time: "",
-      // reason: "",
     });
     showToast("Interview successfully rescheduled.");
     fetchInterviews();
@@ -196,7 +195,7 @@ const InterviewerInterviews = () => {
 
             <div style={{ display: "grid", gap: "10px" }}>
               {(interview.status || "").toLowerCase() !== "completed" && (
-                <button onClick={() => { setSelectedInterview(interview); setRescheduleData({ date: "", time: "", reason: "" }); setShowReschedule(true); }}
+                 <button onClick={() => { setSelectedInterview(interview); setRescheduleData({ date: "", time: "" }); setShowReschedule(true); console.log("Selected interview:", interview);}}
                   style={{ padding: "10px", background: "white", color: "#64748b", border: "1px solid #e2e8f0", borderRadius: "8px", cursor: "pointer", fontWeight: "600", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
                   <RefreshCw size={14} /> Reschedule
                 </button>

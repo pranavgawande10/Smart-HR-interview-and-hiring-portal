@@ -10,23 +10,35 @@ const CandidateDashboard = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
+        // const config = {
+        //   withCredentials: true,
+        //   headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+        // };
+
+        const token = localStorage.getItem("token");
+        console.log(token);
         const config = {
           withCredentials: true,
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         };
 
+
+
+
         // Get Name
-        const userRes = await axios.get("http://localhost:3001/api/v1/candidates/current-user", config).catch(()=>null);
+        const userRes = await axios.get("http://localhost:3001/api/v1/candidates/current-user", config).catch(() => null);
         if (userRes) setUserName(userRes.data.data.name);
 
-        const appsRes = await axios.get("http://localhost:3001/api/v1/application/my-applications", config).catch(()=>({data:{count:0}}));
-        const intsRes = await axios.get("http://localhost:3001/api/v1/candidates/my-interviews", config).catch(()=>({data:{count:0}}));
+        const appsRes = await axios.get("http://localhost:3001/api/v1/application/my-applications", config).catch(() => ({ data: { count: 0 } }));
+        const intsRes = await axios.get("http://localhost:3001/api/v1/candidates/my-interviews", config).catch(() => ({ data: { count: 0 } }));
 
         setStats({
           applications: appsRes.data.count || 0,
           interviews: intsRes.data.count || 0,
         });
-        const jobsRes = await axios.get("http://localhost:3001/api/v1/jobs/all-jobs").catch(()=>({data:{data:[]}}));
+        const jobsRes = await axios.get("http://localhost:3001/api/v1/jobs/all-jobs").catch(() => ({ data: { data: [] } }));
         const jobsArray = jobsRes.data.data || jobsRes.data; // Extract array from standard response
         const mappedJobs = jobsArray.slice(0, 4).map(job => ({
           _id: job._id,
@@ -45,6 +57,7 @@ const CandidateDashboard = () => {
         console.error(err);
       }
     };
+
     fetchDashboardData();
   }, []);
 
@@ -59,7 +72,7 @@ const CandidateDashboard = () => {
         marginBottom: "30px",
       }}>
         <h1 style={{ fontSize: "28px", fontWeight: "700", marginBottom: "10px" }}>
-          Welcome back, {userName}! 
+          Welcome back, {userName}!
         </h1>
         <p style={{ fontSize: "16px", opacity: "0.9" }}>
           Here are your recommended jobs based on your profile.
@@ -117,11 +130,11 @@ const CandidateDashboard = () => {
 
       {/* Recommended Jobs Section - Same Cards as HR Panel */}
       <div style={{ marginBottom: "40px" }}>
-        <div style={{ 
-          display: "flex", 
-          justifyContent: "space-between", 
+        <div style={{
+          display: "flex",
+          justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: "20px" 
+          marginBottom: "20px"
         }}>
           <h2 style={{ fontSize: "22px", fontWeight: "600", color: "#0f172a" }}>
             Recommended Jobs For You
@@ -130,7 +143,7 @@ const CandidateDashboard = () => {
             View All →
           </a>
         </div>
-        
+
         <div style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))",
