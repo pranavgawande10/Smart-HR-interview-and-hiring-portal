@@ -30,26 +30,42 @@ const Applicants = () => {
       }));
       setJobs(fetchedJobs);
 
-      // 2. Fetch Applicants
-      const appsPromises = fetchedJobs.map(job =>
-        axios.get(`http://localhost:3001/api/v1/application/job/${job.id}`, getAxiosConfig())
-          .then(res => {
-            return res.data.applications.map(app => {
-              return {
-                id: app._id,
-                name: app.fullName,
-                jobId: app.job,
-                status: app.status === "applied" ? "pending" : app.status,
-                resumeUrl: app.resume,
-                // Maps to the dynamically updated backend field
-                roundsCount: app.roundsCompleted || 0, 
-                assignedInterviewerId: app.assignedInterviewerId || null,
-                lastInterviewId: app.lastInterviewId || null,
-                isFinalRound: app.isFinalRound || false 
-              };
-            });
-          }).catch(err => [])
-      );
+      // 2. Fetch Applicants & HR Data combined to get roundsCompleted
+      const appsPromises = fetchedJobs.map(async (job) => {
+        try {
+          // Fetch basic apps, shortlisted HR apps, and selected HR apps
+          const [allRes, shortRes, selRes] = await Promise.all([
+            axios.get(`http://localhost:3001/api/v1/application/job/${job.id}`, getAxiosConfig()).catch(() => ({ data: { applications: [] } })),
+            axios.get(`http://localhost:3001/api/v1/hr/shortlisted/${job.id}`, getAxiosConfig()).catch(() => ({ data: { applications: [] } })),
+            axios.get(`http://localhost:3001/api/v1/hr/selected/${job.id}`, getAxiosConfig()).catch(() => ({ data: { applications: [] } }))
+          ]);
+
+          const allApps = allRes.data.applications || [];
+          const shortApps = shortRes.data.applications || [];
+          const selApps = selRes.data.applications || [];
+
+          return allApps.map(app => {
+            // Find matched HR data to extract rounds
+            const shortMatch = shortApps.find(s => s._id === app._id);
+            const selMatch = selApps.find(s => s._id === app._id);
+
+            return {
+              id: app._id,
+              name: app.fullName || (app.candidate && app.candidate.name) || "Unknown",
+              jobId: app.job,
+              status: app.status === "applied" ? "pending" : app.status,
+              resumeUrl: app.resume,
+              // Properly populate level tracking from HR backend
+              roundsCount: shortMatch?.roundsCompleted || selMatch?.roundsCompleted || 0, 
+              assignedInterviewerId: shortMatch?.assignedInterviewerId || null,
+              lastInterviewId: shortMatch?.lastInterviewId || null,
+              isFinalRound: shortMatch?.isFinalRound || false 
+            };
+          });
+        } catch (err) {
+          return [];
+        }
+      });
        
       const appsArrays = await Promise.all(appsPromises);
       setApplicants(appsArrays.flat());
@@ -87,6 +103,7 @@ const Applicants = () => {
         app.id === applicantId ? { ...app, status: newStatus } : app
       );
       setApplicants(updated);
+      fetchData(); // Refresh to catch any new backend states
     } catch (err) {
       console.error("Failed to update status", err);
       alert("Status update failed");
@@ -103,6 +120,7 @@ const Applicants = () => {
     try {
       await axios.put(
         `http://localhost:3001/api/v1/hr/assign-round/${interviewId}`,
+        // Backend handles "HR_SELF" naturally when isFinalRound is true
         { interviewerId: interviewerId === "HR_SELF" ? undefined : interviewerId },
         getAxiosConfig()
       );
@@ -127,7 +145,7 @@ const Applicants = () => {
       await axios.post(
         `http://localhost:3001/api/v1/hr/create-round/${selectedApplicantForRound.id}`,
         {
-          round: "TECHNICAL", 
+          round: roundData.roundName, 
           isFinalRound: roundData.isFinalRound
         },
         getAxiosConfig()

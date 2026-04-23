@@ -1,13 +1,23 @@
 import { useState, useEffect } from "react";
 import { 
   Calendar, Clock, Users, CheckCircle, XCircle, Video, List, User, 
-  ChevronRight, TrendingUp, ChevronDown, FileText, Star, Award
+  ChevronRight, TrendingUp, ChevronDown, FileText, Star, Award, CalendarPlus, Edit
 } from "lucide-react";
 import axios from "axios";
 
 const Interview = () => {
   const [interviews, setInterviews] = useState([]);
   const [selectedInterview, setSelectedInterview] = useState(null);
+  
+  // Scheduling States
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
+  const [interviewToSchedule, setInterviewToSchedule] = useState(null);
+  const [scheduleData, setScheduleData] = useState({ date: "", time: "", meetingLink: "" });
+
+  // Feedback & Final Decision States
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+  const [interviewToEvaluate, setInterviewToEvaluate] = useState(null);
+  const [feedbackText, setFeedbackText] = useState("");
 
   const getAxiosConfig = () => ({
     withCredentials: true,
@@ -31,7 +41,7 @@ const Interview = () => {
           rating: i.feedbackRating || 5,
           technicalSkills: i.feedbackTechnical || "Evaluated by Interviewer",
           communicationSkills: i.feedbackCommunication || "Evaluated by Interviewer",
-          overallFeedback: i.feedbackOverall || i.comments || "Feedback received",
+          overallFeedback: i.feedbackOverall || i.comments || i.feedback || "Feedback received",
           result: i.result
         } : null
       }));
@@ -45,29 +55,72 @@ const Interview = () => {
     fetchInterviews();
   }, []);
 
-  const updateStatus = async (id, newStatus) => {
+  // --- SCHEDULING LOGIC ---
+  const openScheduleModal = (interview) => {
+    setInterviewToSchedule(interview);
+    setScheduleData({ date: "", time: "", meetingLink: "" });
+    setScheduleModalOpen(true);
+  };
+
+  const submitSchedule = async () => {
+    if (!scheduleData.date || !scheduleData.time) {
+      alert("Please provide at least a date and time");
+      return;
+    }
     try {
-       // Optimistic Update
-       setInterviews(interviews.map(i => i.id === id ? { ...i, status: newStatus } : i));
-       
-       // Just mapping 'Hired' or 'Rejected' to the HR final decision API.
-       if (newStatus === "Hired" || newStatus === "Rejected") {
-          await axios.patch(`http://localhost:3001/api/v1/hr/final-decision/${id}`, { decision: newStatus.toUpperCase() }, getAxiosConfig()).catch(e=>console.error(e));
-       }
+      await axios.post(`http://localhost:3001/api/v1/hr/schedule/${interviewToSchedule.id}`, {
+        date: scheduleData.date,
+        time: scheduleData.time,
+        meetingLink: scheduleData.meetingLink,
+        mode: "ONLINE",
+        location: "Virtual"
+      }, getAxiosConfig());
+
+      alert("Interview scheduled successfully!");
+      setScheduleModalOpen(false);
+      fetchInterviews(); 
     } catch (err) {
-       console.error("Status Update Failed", err);
+      console.error(err);
+      alert(err.response?.data?.message || "Failed to schedule interview");
+    }
+  };
+
+  // --- FEEDBACK & DECISION LOGIC ---
+  const openFeedbackModal = (interview) => {
+    setInterviewToEvaluate(interview);
+    setFeedbackText("");
+    setFeedbackModalOpen(true);
+  };
+
+  const submitFinalDecision = async (decisionResult) => {
+    if (!feedbackText.trim()) {
+      alert("Please provide feedback before making a final decision.");
+      return;
+    }
+
+    try {
+      await axios.patch(`http://localhost:3001/api/v1/hr/final-decision/${interviewToEvaluate.id}`, { 
+          result: decisionResult,
+          feedback: feedbackText
+      }, getAxiosConfig());
+
+      alert(`Decision (${decisionResult}) submitted successfully!`);
+      setFeedbackModalOpen(false);
+      fetchInterviews(); // Refresh to remove the completed interview from the active dashboard
+    } catch (err) {
+      console.error("Evaluation Error:", err);
+      // 🔥 This explicitly shows the 400 error message from your backend (e.g., "Already completed")
+      alert(err.response?.data?.message || "Failed to submit decision. Please try again.");
     }
   };
 
   const getStatusBadge = (status) => {
     const s = status ? status.toLowerCase() : "scheduled";
-    // Blue, Green, Purple, Gold mapping as requested
     if (s === "scheduled") return <span style={{ background: "#dbeafe", color: "#2563eb", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "600" }}>Scheduled</span>;
     if (s === "completed") return <span style={{ background: "#d1fae5", color: "#059669", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "600" }}>Completed</span>;
     if (s === "final") return <span style={{ background: "#f3e8ff", color: "#7e22ce", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "600" }}>Final</span>;
     if (s === "hired") return <span style={{ background: "#fef08a", color: "#854d0e", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "600" }}>Hired</span>;
     
-    // Fallbacks just in case
     if (s === "cancelled") return <span style={{ background: "#fee2e2", color: "#dc2626", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "600" }}>Cancelled</span>;
     return <span style={{ background: "#f1f5f9", color: "#475569", padding: "6px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "600" }}>{status}</span>;
   };
@@ -86,14 +139,10 @@ const Interview = () => {
   return (
     <div style={{ padding: "24px", maxWidth: "1200px", margin: "0 auto" }}>
       
-      {/* 1. Page Heading */}
+      {/* Header */}
       <div style={{
-        marginBottom: "30px",
-        padding: "25px",
-        background: "linear-gradient(135deg, rgb(20, 184, 166) 0%, rgb(14, 165, 233) 100%)",
-        borderRadius: "16px",
-        color: "white",
-        boxShadow: "0 4px 20px rgba(20, 184, 166, 0.3)"
+        marginBottom: "30px", padding: "25px", background: "linear-gradient(135deg, rgb(20, 184, 166) 0%, rgb(14, 165, 233) 100%)",
+        borderRadius: "16px", color: "white", boxShadow: "0 4px 20px rgba(20, 184, 166, 0.3)"
       }}>
         <h1 style={{ fontSize: "28px", fontWeight: "700", marginBottom: "8px", color: "white" }}>
           Interviews Dashboard
@@ -103,12 +152,9 @@ const Interview = () => {
         </p>
       </div>
 
-      {/* 2. Top Summary Stat Cards */}
+      {/* Stats */}
       <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-        gap: "24px",
-        marginBottom: "40px"
+        display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px", marginBottom: "40px"
       }}>
         <div style={{ background: "white", borderRadius: "12px", padding: "24px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", border: "1px solid #e2e8f0" }}>
           <p style={{ color: "#64748b", fontSize: "14px", fontWeight: "600", textTransform: "uppercase", marginBottom: "8px", letterSpacing: "0.5px" }}>Total Interviews</p>
@@ -134,7 +180,7 @@ const Interview = () => {
         </div>
       </div>
 
-      {/* Helper to render an Interview Card */}
+      {/* Cards Render Function */}
       {(() => {
         const renderCard = (interview) => (
           <div key={interview.id} style={{
@@ -154,7 +200,7 @@ const Interview = () => {
               <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "24px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", color: "#475569" }}>
                   <Calendar size={18} color="#94a3b8" />
-                  <span>{interview.date} {interview.time && `at ${interview.time}`}</span>
+                  <span>{interview.date ? `${interview.date} at ${interview.time}` : "Not Scheduled Yet"}</span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", color: "#475569" }}>
                   <User size={18} color="#94a3b8" />
@@ -164,60 +210,67 @@ const Interview = () => {
                   <List size={18} color="#94a3b8" />
                   <span style={{ fontWeight: "500", color: "#0f172a" }}>{interview.roundName || "General Round"}</span>
                 </div>
-                
-                {/* Instant Status Dropdown for HR */}
-                <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", color: "#0f172a", marginTop: "4px" }}>
-                  <Award size={18} color="#20b8a6" />
-                  <div style={{ position: "relative", flex: 1 }}>
-                    <select 
-                      value={interview.status || "Scheduled"}
-                      onChange={(e) => updateStatus(interview.id, e.target.value)}
-                      style={{ 
-                        width: "100%", padding: "6px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", 
-                        fontSize: "13px", fontWeight: "600", color: "#334155", appearance: "none", cursor: "pointer", background: "white" 
-                      }}
-                    >
-                      <option value="Scheduled">Scheduled</option>
-                      <option value="Completed">Completed</option>
-                      <option value="Final">Final</option>
-                      <option value="Hired">Hired</option>
-                    </select>
-                    <ChevronDown size={14} style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "#64748b" }} />
-                  </div>
-                </div>
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: "12px", borderTop: "1px solid #f1f5f9", paddingTop: "20px" }}>
-              {interview.link && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", borderTop: "1px solid #f1f5f9", paddingTop: "20px" }}>
+              
+              <div style={{ display: "flex", gap: "10px" }}>
+                {interview.link ? (
+                  <button 
+                    onClick={() => handleJoinMeeting(interview.link)}
+                    style={{
+                      flex: 1, padding: "10px 0", background: "linear-gradient(135deg, rgb(20, 184, 166) 0%, rgb(14, 165, 233) 100%)",
+                      color: "white", border: "none", borderRadius: "8px", fontWeight: "600", fontSize: "14px",
+                      cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px"
+                    }}
+                  >
+                    <Video size={16} /> Join
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => openScheduleModal(interview)}
+                    style={{
+                      flex: 1, padding: "10px 0", background: "#f1f5f9",
+                      color: "#0f172a", border: "1px solid #e2e8f0", borderRadius: "8px", fontWeight: "600", fontSize: "14px",
+                      cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px"
+                    }}
+                  >
+                    <CalendarPlus size={16} /> Schedule
+                  </button>
+                )}
                 <button 
-                  onClick={() => handleJoinMeeting(interview.link)}
+                  onClick={() => handleViewDetails(interview)}
                   style={{
-                    flex: 1, padding: "10px 0", background: "linear-gradient(135deg, rgb(20, 184, 166) 0%, rgb(14, 165, 233) 100%)",
-                    color: "white", border: "none", borderRadius: "8px", fontWeight: "600", fontSize: "14px",
+                    flex: 1, padding: "10px 0", background: "white", color: "#475569", 
+                    border: "1px solid #cbd5e1", borderRadius: "8px", fontWeight: "600", fontSize: "14px",
                     cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px"
                   }}
                 >
-                  <Video size={16} /> Join
+                  Details <ChevronRight size={16} />
+                </button>
+              </div>
+
+              {/* Feedback & Evaluate Button - Only visible if not already completed! */}
+              {interview.status !== "COMPLETED" && (
+                <button 
+                  onClick={() => openFeedbackModal(interview)}
+                  style={{
+                    width: "100%", padding: "10px 0", background: "#fef08a", color: "#854d0e", 
+                    border: "none", borderRadius: "8px", fontWeight: "700", fontSize: "14px",
+                    cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px"
+                  }}
+                >
+                  <Edit size={16} /> Evaluate & Final Decision
                 </button>
               )}
-              <button 
-                onClick={() => handleViewDetails(interview)}
-                style={{
-                  flex: 1, padding: "10px 0", background: "white", color: "#475569", 
-                  border: "1px solid #cbd5e1", borderRadius: "8px", fontWeight: "600", fontSize: "14px",
-                  cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px"
-                }}
-              >
-                View Details <ChevronRight size={16} />
-              </button>
+
             </div>
           </div>
         );
 
         return (
           <>
-            {/* Upcoming Interviews */}
             <div style={{ marginBottom: "50px" }}>
               <h2 style={{ fontSize: "20px", fontWeight: "700", color: "#0f172a", marginBottom: "20px", paddingBottom: "10px", borderBottom: "2px solid #e2e8f0" }}>
                 Upcoming Interviews
@@ -227,7 +280,6 @@ const Interview = () => {
               </div>
             </div>
 
-            {/* Past/Updated Interviews */}
             <div>
               <h2 style={{ fontSize: "20px", fontWeight: "700", color: "#0f172a", marginBottom: "20px", paddingBottom: "10px", borderBottom: "2px solid #e2e8f0" }}>
                 Past / Updated States
@@ -240,7 +292,7 @@ const Interview = () => {
         );
       })()}
 
-      {/* Details Modal */}
+      {/* View Details Modal */}
       {selectedInterview && (
         <div style={{
           position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)",
@@ -265,7 +317,6 @@ const Interview = () => {
                 </div>
               </div>
 
-              {/* Parsed Feedback block if exists */}
               {selectedInterview.submittedFeedback ? (
                 <div style={{ padding: "20px", background: "#f0fdf4", borderRadius: "12px", border: "1px solid #dcfce7" }}>
                   <h4 style={{ margin: "0 0 15px 0", fontSize: "15px", fontWeight: "700", color: "#166534", display: "flex", alignItems: "center", gap: "8px" }}>
@@ -283,19 +334,11 @@ const Interview = () => {
 
                   <div style={{ display: "grid", gap: "12px", fontSize: "14px" }}>
                     <div>
-                      <strong style={{ color: "#14532d", display: "block", marginBottom: "4px" }}>Technical Edge:</strong>
-                      <span style={{ color: "#166534" }}>{selectedInterview.submittedFeedback.technicalSkills}</span>
-                    </div>
-                    <div>
-                      <strong style={{ color: "#14532d", display: "block", marginBottom: "4px" }}>Communication:</strong>
-                      <span style={{ color: "#166534" }}>{selectedInterview.submittedFeedback.communicationSkills}</span>
-                    </div>
-                    <div>
-                      <strong style={{ color: "#14532d", display: "block", marginBottom: "4px" }}>Overall Summary:</strong>
+                      <strong style={{ color: "#14532d", display: "block", marginBottom: "4px" }}>Overall Summary / Feedback:</strong>
                       <span style={{ color: "#166534" }}>{selectedInterview.submittedFeedback.overallFeedback}</span>
                     </div>
                     <div style={{ marginTop: "10px", padding: "10px", background: "white", borderRadius: "8px", fontWeight: "600", color: "#15803d", display: "inline-block" }}>
-                      Interviewer Suggestion: {selectedInterview.submittedFeedback.result}
+                      Decision / Result: {selectedInterview.submittedFeedback.result}
                     </div>
                   </div>
                 </div>
@@ -306,7 +349,72 @@ const Interview = () => {
                 </div>
               )}
             </div>
-            <button onClick={() => setSelectedInterview(null)} style={{ width: "100%", padding: "14px", background: "linear-gradient(135deg, rgb(20, 184, 166) 0%, rgb(14, 165, 233) 100%)", color: "white", border: "none", borderRadius: "12px", cursor: "pointer", fontWeight: "600", transition: "opacity 0.2s" }} onMouseEnter={e => e.currentTarget.style.opacity = 0.9} onMouseLeave={e => e.currentTarget.style.opacity = 1}>Close Window</button>
+            <button onClick={() => setSelectedInterview(null)} style={{ width: "100%", padding: "14px", background: "linear-gradient(135deg, rgb(20, 184, 166) 0%, rgb(14, 165, 233) 100%)", color: "white", border: "none", borderRadius: "12px", cursor: "pointer", fontWeight: "600" }}>Close Window</button>
+          </div>
+        </div>
+      )}
+
+      {/* Schedule Interview Modal */}
+      {scheduleModalOpen && interviewToSchedule && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, backdropFilter: "blur(4px)" }}>
+          <div style={{ background: "white", padding: "30px", borderRadius: "16px", width: "400px", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)" }}>
+            <h3 style={{ margin: "0 0 20px 0", fontSize: "20px", color: "#0f172a" }}>Schedule Interview</h3>
+            <p style={{ fontSize: "14px", color: "#64748b", marginBottom: "20px" }}>Set the date, time, and meeting link for {interviewToSchedule.candidateName}.</p>
+            
+            <div style={{ marginBottom: "15px" }}>
+              <label style={{ display: "block", marginBottom: "8px", fontWeight: "500", fontSize: "14px", color: "#475569" }}>Date</label>
+              <input type="date" value={scheduleData.date} onChange={(e) => setScheduleData({...scheduleData, date: e.target.value})} style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", outline: "none", boxSizing: "border-box" }} />
+            </div>
+            
+            <div style={{ marginBottom: "15px" }}>
+              <label style={{ display: "block", marginBottom: "8px", fontWeight: "500", fontSize: "14px", color: "#475569" }}>Time</label>
+              <input type="time" value={scheduleData.time} onChange={(e) => setScheduleData({...scheduleData, time: e.target.value})} style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", outline: "none", boxSizing: "border-box" }} />
+            </div>
+
+            <div style={{ marginBottom: "25px" }}>
+              <label style={{ display: "block", marginBottom: "8px", fontWeight: "500", fontSize: "14px", color: "#475569" }}>Meeting Link</label>
+              <input type="url" placeholder="https://meet.google.com/..." value={scheduleData.meetingLink} onChange={(e) => setScheduleData({...scheduleData, meetingLink: e.target.value})} style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", outline: "none", boxSizing: "border-box" }} />
+            </div>
+
+            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+              <button onClick={() => setScheduleModalOpen(false)} style={{ padding: "10px 20px", background: "white", color: "#475569", border: "1px solid #e2e8f0", borderRadius: "8px", cursor: "pointer", fontWeight: "500" }}>Cancel</button>
+              <button onClick={submitSchedule} style={{ padding: "10px 20px", background: "rgb(20, 184, 166)", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600" }}>Schedule Now</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Feedback & Final Decision Modal */}
+      {feedbackModalOpen && interviewToEvaluate && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, backdropFilter: "blur(4px)" }}>
+          <div style={{ background: "white", padding: "30px", borderRadius: "16px", width: "450px", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)" }}>
+            <h3 style={{ margin: "0 0 10px 0", fontSize: "20px", color: "#0f172a" }}>Evaluate Candidate</h3>
+            <p style={{ fontSize: "14px", color: "#64748b", marginBottom: "20px" }}>
+              Provide feedback and final decision for <strong>{interviewToEvaluate.candidateName}</strong> ({interviewToEvaluate.roundName}).
+            </p>
+            
+            <div style={{ marginBottom: "25px" }}>
+              <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", fontSize: "14px", color: "#0f172a" }}>Interview Feedback Notes <span style={{color: "red"}}>*</span></label>
+              <textarea 
+                rows={4}
+                placeholder="Write your detailed feedback here..." 
+                value={feedbackText} 
+                onChange={(e) => setFeedbackText(e.target.value)} 
+                style={{ width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #cbd5e1", outline: "none", boxSizing: "border-box", fontSize: "14px", fontFamily: "inherit", resize: "vertical" }} 
+              />
+            </div>
+
+            <div style={{ display: "flex", gap: "12px", borderTop: "1px solid #e2e8f0", paddingTop: "20px" }}>
+              <button onClick={() => setFeedbackModalOpen(false)} style={{ flex: 1, padding: "12px", background: "white", color: "#475569", border: "1px solid #cbd5e1", borderRadius: "8px", cursor: "pointer", fontWeight: "600" }}>
+                Cancel
+              </button>
+              <button onClick={() => submitFinalDecision("FAIL")} style={{ flex: 1, padding: "12px", background: "#fee2e2", color: "#dc2626", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                <XCircle size={18} /> Reject
+              </button>
+              <button onClick={() => submitFinalDecision("PASS")} style={{ flex: 1, padding: "12px", background: "#dcfce7", color: "#166534", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                <CheckCircle size={18} /> Hire / Pass
+              </button>
+            </div>
           </div>
         </div>
       )}

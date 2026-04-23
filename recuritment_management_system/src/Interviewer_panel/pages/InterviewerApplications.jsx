@@ -83,15 +83,27 @@ const InterviewerApplications = () => {
   };
 
   const updateStatus = async (id, newStatus) => {
-    // Usually status is handled automatically in the backend. 
-    // If we wanted to locally update just for UI before refresh:
-    // setInterviews(interviews.map(i => i.id === id ? { ...i, status: newStatus } : i));
+    // 1. Update the local UI state immediately so the card disappears 
+    setInterviews(interviews.map(i => i.id === id ? { ...i, status: newStatus } : i));
+    
+    // 2. Add your backend API call here to persist the status change in the database
+    // try {
+    //   await axios.patch(`http://localhost:3001/api/v1/interviewer/status/${id}`, { status: newStatus }, getAxiosConfig());
+    // } catch (err) {
+    //   console.error("Failed to update status on the server", err);
+    // }
   };
 
   const filtered = useMemo(() => {
     return interviews.filter(app => {
-      return app.candidateName?.toLowerCase().includes(search.toLowerCase()) || 
-             app.position?.toLowerCase().includes(search.toLowerCase());
+      // Check if candidate matches search
+      const matchesSearch = app.candidateName?.toLowerCase().includes(search.toLowerCase()) || 
+                            app.position?.toLowerCase().includes(search.toLowerCase());
+                            
+      // Ensure the status is NOT "Completed"
+      const isNotCompleted = (app.status || "").toLowerCase() !== "completed";
+      
+      return matchesSearch && isNotCompleted;
     });
   }, [interviews, search]);
 
@@ -130,85 +142,91 @@ const InterviewerApplications = () => {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))", gap: "20px" }}>
-        {filtered.map(app => (
-          <div key={app.id} style={{
-            background: "white", borderRadius: "16px", border: "1px solid #e2e8f0", padding: "24px",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.03)", transition: "transform 0.2s"
-          }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "15px" }}>
-               <div>
-                  <h3 style={{ fontSize: "18px", fontWeight: "700", margin: "0 0 5px 0", color: "#0f172a" }}>{app.candidateName}</h3>
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#64748b", fontSize: "14px" }}>
-                    <Briefcase size={14} /> {app.position} • {app.company || "Company"}
-                  </div>
-               </div>
-               {/* Status Dropdown Logic */}
-               <div style={{ position: "relative", alignSelf: "flex-start" }}>
-                 <select 
-                   value={app.status || "Assigned"} 
-                   onChange={(e) => updateStatus(app.id, e.target.value)}
-                   style={{
-                     appearance: "none",
-                     background: (app.status === "Scheduled") ? "#dbeafe" : 
-                                 (app.status === "Completed") ? "#dcfce7" : 
-                                 (app.status === "Rejected") ? "#fee2e2" : 
-                                 (app.status === "Cancelled") ? "#f3f4f6" : 
-                                 (app.status === "Rescheduled") ? "#ffedd5" : "#fef3c7",
-                     color: (app.status === "Scheduled") ? "#2563eb" : 
-                            (app.status === "Completed") ? "#16a34a" : 
-                            (app.status === "Rejected") ? "#dc2626" : 
-                            (app.status === "Cancelled") ? "#4b5563" : 
-                            (app.status === "Rescheduled") ? "#ea580c" : "#d97706",
-                     padding: "6px 28px 6px 14px", 
-                     borderRadius: "20px", 
-                     border: "none", 
-                     fontSize: "12px", 
-                     fontWeight: "700", 
-                     cursor: "pointer", 
-                     outline: "none",
-                     transition: "background 0.3s ease, color 0.3s ease"
-                   }}>
-                   <option value="Assigned">Assigned</option>
-                   <option value="Scheduled">Scheduled</option>
-                   <option value="Completed">Completed</option>
-                   <option value="Rejected">Rejected</option>
-                   <option value="Cancelled">Cancelled</option>
-                   <option value="Rescheduled">Rescheduled</option>
-                 </select>
-                 <ChevronDown size={14} style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", opacity: 0.8, color: (app.status === "Scheduled") ? "#2563eb" : (app.status === "Completed") ? "#16a34a" : (app.status === "Rejected") ? "#dc2626" : (app.status === "Cancelled") ? "#4b5563" : (app.status === "Rescheduled") ? "#ea580c" : "#d97706" }} />
-               </div>
-            </div>
+        {filtered.length === 0 ? (
+          <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "40px", color: "#64748b" }}>
+            No active applications in your queue.
+          </div>
+        ) : (
+          filtered.map(app => (
+            <div key={app.id} style={{
+              background: "white", borderRadius: "16px", border: "1px solid #e2e8f0", padding: "24px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.03)", transition: "transform 0.2s"
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "15px" }}>
+                 <div>
+                    <h3 style={{ fontSize: "18px", fontWeight: "700", margin: "0 0 5px 0", color: "#0f172a" }}>{app.candidateName}</h3>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#64748b", fontSize: "14px" }}>
+                      <Briefcase size={14} /> {app.position} • {app.company || "Company"}
+                    </div>
+                 </div>
+                 {/* Status Dropdown Logic */}
+                 <div style={{ position: "relative", alignSelf: "flex-start" }}>
+                   <select 
+                     value={app.status || "Assigned"} 
+                     onChange={(e) => updateStatus(app.id, e.target.value)}
+                     style={{
+                       appearance: "none",
+                       background: (app.status === "Scheduled") ? "#dbeafe" : 
+                                   (app.status === "Completed") ? "#dcfce7" : 
+                                   (app.status === "Rejected") ? "#fee2e2" : 
+                                   (app.status === "Cancelled") ? "#f3f4f6" : 
+                                   (app.status === "Rescheduled") ? "#ffedd5" : "#fef3c7",
+                       color: (app.status === "Scheduled") ? "#2563eb" : 
+                              (app.status === "Completed") ? "#16a34a" : 
+                              (app.status === "Rejected") ? "#dc2626" : 
+                              (app.status === "Cancelled") ? "#4b5563" : 
+                              (app.status === "Rescheduled") ? "#ea580c" : "#d97706",
+                       padding: "6px 28px 6px 14px", 
+                       borderRadius: "20px", 
+                       border: "none", 
+                       fontSize: "12px", 
+                       fontWeight: "700", 
+                       cursor: "pointer", 
+                       outline: "none",
+                       transition: "background 0.3s ease, color 0.3s ease"
+                     }}>
+                     <option value="Assigned">Assigned</option>
+                     <option value="Scheduled">Scheduled</option>
+                     <option value="Completed">Completed</option>
+                     <option value="Rejected">Rejected</option>
+                     <option value="Cancelled">Cancelled</option>
+                     <option value="Rescheduled">Rescheduled</option>
+                   </select>
+                   <ChevronDown size={14} style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none", opacity: 0.8, color: (app.status === "Scheduled") ? "#2563eb" : (app.status === "Completed") ? "#16a34a" : (app.status === "Rejected") ? "#dc2626" : (app.status === "Cancelled") ? "#4b5563" : (app.status === "Rescheduled") ? "#ea580c" : "#d97706" }} />
+                 </div>
+              </div>
 
-            <div style={{ background: "#f8fafc", padding: "14px", borderRadius: "12px", marginBottom: "20px" }}>
-              <div style={{ fontSize: "13px", color: "#475569", marginBottom: "6px" }}>
-                <strong>Round:</strong> {app.roundName || "General Interview"}
-              </div>
-              <div style={{ fontSize: "13px", color: "#475569", marginBottom: "6px" }}>
-                <strong>Assigned By HR:</strong> {app.assignedDate || "Recently"}
-              </div>
-              {(app.status || "").toLowerCase() === "scheduled" && (
-                <div style={{ fontSize: "13px", color: "#2563eb", fontWeight: "600" }}>
-                  Scheduled for: {app.date} at {app.time}
+              <div style={{ background: "#f8fafc", padding: "14px", borderRadius: "12px", marginBottom: "20px" }}>
+                <div style={{ fontSize: "13px", color: "#475569", marginBottom: "6px" }}>
+                  <strong>Round:</strong> {app.roundName || "General Interview"}
                 </div>
+                <div style={{ fontSize: "13px", color: "#475569", marginBottom: "6px" }}>
+                  <strong>Assigned By HR:</strong> {app.assignedDate || "Recently"}
+                </div>
+                {(app.status || "").toLowerCase() === "scheduled" && (
+                  <div style={{ fontSize: "13px", color: "#2563eb", fontWeight: "600" }}>
+                    Scheduled for: {app.date} at {app.time}
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              {((app.status || "").toLowerCase() === "assigned" || !app.status) && (
+                <button 
+                  onClick={() => openScheduleModal(app)}
+                  style={{ width: "100%", padding: "12px", background: gradient, color: "white", border: "none", borderRadius: "10px", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+                >
+                  <Calendar size={16} /> Schedule Interview
+                </button>
+              )}
+              {(app.status || "").toLowerCase() === "scheduled" && (
+                <button disabled style={{ width: "100%", padding: "12px", background: "#e2e8f0", color: "#64748b", border: "none", borderRadius: "10px", fontWeight: "600", cursor: "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                  <CheckCircle size={16} /> Interview Scheduled
+                </button>
               )}
             </div>
-
-            {/* Action Buttons */}
-            {((app.status || "").toLowerCase() === "assigned" || !app.status) && (
-              <button 
-                onClick={() => openScheduleModal(app)}
-                style={{ width: "100%", padding: "12px", background: gradient, color: "white", border: "none", borderRadius: "10px", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
-              >
-                <Calendar size={16} /> Schedule Interview
-              </button>
-            )}
-            {(app.status || "").toLowerCase() === "scheduled" && (
-              <button disabled style={{ width: "100%", padding: "12px", background: "#e2e8f0", color: "#64748b", border: "none", borderRadius: "10px", fontWeight: "600", cursor: "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
-                <CheckCircle size={16} /> Interview Scheduled
-              </button>
-            )}
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       {/* Scheduling Modal */}

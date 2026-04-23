@@ -109,7 +109,7 @@ const InterviewerDashboard = () => {
         boxShadow: "0 4px 20px rgba(20, 184, 166, 0.3)"
       }}>
         <h1 style={{ fontSize: "28px", fontWeight: "700", marginBottom: "8px", color: "white" }}>
-          Good morning, {currentInterviewer.split(' ')[0]}! 👋
+          Welcome Back, {currentInterviewer.split(' ')[0]}! 
         </h1>
         <p style={{ fontSize: "16px", opacity: "0.9", margin: "0", color: "rgba(255, 255, 255, 0.9)" }}>
           Here's what's happening with your interviews today.
