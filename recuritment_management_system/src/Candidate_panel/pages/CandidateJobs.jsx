@@ -11,16 +11,18 @@ const CandidateJobs = () => {
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        const res = await axios.get("http://localhost:3001/api/v1/jobs/all-jobs");
-        const jobsArray = res.data.data || res.data; // Handles both structures securely
+        const res = await axios.get("http://localhost:3000/job/all");
+        const jobsArray = res.data.data || res.data;
+        
         const mapped = jobsArray.map(job => ({
+          ...job,
           _id: job._id,
           company: job.createdBy?.companyName || "Unknown Company",
           post: job.title,
-          tag1: "Full Time",
+          tag1: job.jobType || "Full Time",
           tag2: job.location,
           datePosted: new Date(job.createdAt || Date.now()).toLocaleDateString(),
-          pay: "Competitive",
+          pay: job.salary || "Competitive",
           location: job.location,
           brandLogo: "https://img.icons8.com/color/48/domain.png",
         }));
@@ -40,7 +42,7 @@ const CandidateJobs = () => {
   );
 
   return (
-    <div>
+    <div style={{ position: "relative", minHeight: "100vh" }}>
       <h1 style={{ fontSize: "28px", fontWeight: "700", color: "#0f172a", marginBottom: "8px" }}>
         Browse Jobs
       </h1>
@@ -49,19 +51,10 @@ const CandidateJobs = () => {
       </p>
 
       {/* Search Bar */}
-      <div style={{
-        display: "flex",
-        gap: "16px",
-        marginBottom: "30px",
-      }}>
+      <div style={{ display: "flex", gap: "16px", marginBottom: "30px" }}>
         <div style={{
-          flex: "1",
-          display: "flex",
-          alignItems: "center",
-          background: "white",
-          border: "1px solid #e2e8f0",
-          borderRadius: "12px",
-          padding: "0 16px",
+          flex: "1", display: "flex", alignItems: "center", background: "white",
+          border: "1px solid #e2e8f0", borderRadius: "12px", padding: "0 16px",
         }}>
           <Search size={20} color="#64748b" />
           <input
@@ -69,13 +62,7 @@ const CandidateJobs = () => {
             placeholder="Search by job title, company, or keywords..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "14px",
-              border: "none",
-              outline: "none",
-              fontSize: "15px",
-            }}
+            style={{ width: "100%", padding: "14px", border: "none", outline: "none", fontSize: "15px" }}
           />
         </div>
       </div>
@@ -89,7 +76,9 @@ const CandidateJobs = () => {
           gap: "20px",
         }}>
           {filteredJobs.map((job) => (
-            <JobCard key={job._id} {...job} />
+            <div key={job._id}>
+               <JobCard {...job} />
+            </div>
           ))}
         </div>
       )}

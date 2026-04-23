@@ -8,7 +8,8 @@ import {
   changePassword,
   getCurrentUser,
   respondToInterview,
-  getMyInterviews
+  getMyInterviews,
+  requestRescheduleCandidate
 } from "../controller/candidate.controller.js";
 
 import { upload } from "../middleware/multer.middleware.js";
@@ -74,5 +75,7 @@ router.get(
   authorizeRoles("CANDIDATE"),
   getMyInterviews
 );
+
+router.patch("/request-reschedule/:interviewId", verifyJWT, authorizeRoles("CANDIDATE"), requestRescheduleCandidate);
 
 export default router;

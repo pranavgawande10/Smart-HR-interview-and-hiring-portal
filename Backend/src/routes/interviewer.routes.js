@@ -14,4 +14,4 @@ router.patch("/skills", verifyJWT, authorizeRoles("INTERVIEWER"), updateSkills);
 router.get("/my-interviews", verifyJWT, authorizeRoles("INTERVIEWER"), getMyInterviews);
 router.get("/profile", verifyJWT, authorizeRoles("INTERVIEWER"), getProfile);
 
-export default router;
+export default router; 

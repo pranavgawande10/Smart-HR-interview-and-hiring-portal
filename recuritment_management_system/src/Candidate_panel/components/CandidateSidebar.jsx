@@ -16,7 +16,7 @@ const CandidateSidebar = ({
   onMobileRequestClose,
 }) => {
   const navigate = useNavigate();
-  const userName = localStorage.getItem("userName") || "Candidate";
+  const userName = localStorage.getItem("name") || "Candidate";
   const userRole = localStorage.getItem("role") || "Candidate";
 
   const handleLogout = () => {

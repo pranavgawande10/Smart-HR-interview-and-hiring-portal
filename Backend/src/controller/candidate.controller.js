@@ -419,6 +419,23 @@ export const respondToInterview = async (req, res) => {
   }
 };
 
+export const requestRescheduleCandidate = asyncHandler(async (req, res) => {
+  const { interviewId } = req.params;
+  const { reason } = req.body;
+
+  const interview = await Interview.findById(interviewId);
+  if (!interview || interview.candidate.toString() !== req.user._id.toString()) {
+    throw new ApiError(403, "Unauthorized");
+  }
+
+  // Set the "Action Required" status for interviewer
+  interview.candidateResponse = "REQUEST_RESCHEDULE";
+  interview.rescheduleReason = reason; 
+  await interview.save();
+
+  res.status(200).json(new ApiResponse(200, interview, "Request sent"));
+});
+
 
 
 

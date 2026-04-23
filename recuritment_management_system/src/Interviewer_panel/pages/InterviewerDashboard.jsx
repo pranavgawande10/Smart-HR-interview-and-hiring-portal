@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Calendar, Clock, Users, CheckCircle, Video, TrendingUp, UserCheck, CheckSquare, List } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Calendar, Clock, Users, CheckCircle, Video, TrendingUp, CheckSquare, List, AlertCircle } from "lucide-react";
 import axios from "axios";
 
 const InterviewerDashboard = () => {
@@ -15,26 +15,48 @@ const InterviewerDashboard = () => {
     headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
   });
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const res = await axios.get("http://localhost:3001/api/v1/interviewer/my-interviews", getAxiosConfig());
-        setInterviews(res.data.interviews || []);
-      } catch (err) {
-        console.error("Dashboard Fetch Error", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchDashboardData();
+  // Extracted fetch function so we can refresh data after scheduling
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      const res = await axios.get("http://localhost:3001/api/v1/interviewer/my-interviews", getAxiosConfig());
+      setInterviews(res.data.interviews || []);
+    } catch (err) {
+      console.error("Dashboard Fetch Error", err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
+  // Function to schedule an interview and instantly refresh the dashboard
+  const scheduleNewInterview = async (interviewId, scheduleDetails) => {
+    try {
+      const res = await axios.post(
+        `http://localhost:3001/api/v1/interviewer/schedule/${interviewId}`,
+        scheduleDetails,
+        getAxiosConfig()
+      );
+      
+      console.log("Success:", res.data.message);
+      alert("Interview scheduled successfully!");
+      
+      // Refresh the dashboard data to instantly update "Today's Schedule"
+      fetchDashboardData(); 
+      
+    } catch (error) {
+      console.error("Failed to schedule:", error.response?.data?.message || error.message);
+      alert(error.response?.data?.message || "Failed to schedule interview.");
+    }
+  };
 
   const totalAssigned = interviews.length;
   const scheduled = interviews.filter(i => i.status === "SCHEDULED").length;
   const completed = interviews.filter(i => i.status === "COMPLETED").length;
-  // Let's assume pending feedback means they are scheduled but dates have passed, or simply anything not COMPLETED.
-  // Actually, wait, if they have result/feedback already it's completed.
-  // Let's consider pending feedback as any interview that is SCHEDULED and in the past, but we will just map logically.
+  const requestsCount = interviews.filter(i => i.candidateResponse === "REQUEST_RESCHEDULE").length;
+  
   const now = new Date();
   const pendingFeedback = interviews.filter(i => i.status === "SCHEDULED" && new Date(i.scheduledAt) < now).length;
 
@@ -94,10 +116,21 @@ const InterviewerDashboard = () => {
         </p>
       </div>
 
-      {/* 4 Summary Stat Cards */}
+      {/* Action Required Banner for Reschedule Requests */}
+      {requestsCount > 0 && (
+        <div style={{ background: "#fffbeb", border: "1px solid #fef3c7", padding: "16px", borderRadius: "12px", marginBottom: "30px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <AlertCircle color="#d97706" />
+            <span style={{ color: "#92400e", fontWeight: "600" }}>Candidates have requested rescheduling.</span>
+          </div>
+          <a href="/interviewer/interviews" style={{ background: "#f59e0b", color: "white", padding: "8px 16px", borderRadius: "8px", textDecoration: "none", fontWeight: "700" }}>Respond Now</a>
+        </div>
+      )}
+
+      {/* Summary Stat Cards */}
       <div style={{
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+        gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
         gap: "20px",
         marginBottom: "35px"
       }}>
@@ -107,6 +140,15 @@ const InterviewerDashboard = () => {
             <Users size={20} color="#3b82f6" />
           </div>
           <h3 style={{ fontSize: "32px", fontWeight: "800", color: "#0f172a", margin: 0 }}>{totalAssigned}</h3>
+        </div>
+
+        {/* Added Requests Card */}
+        <div style={{ background: "white", padding: "24px", borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", border: requestsCount > 0 ? "2px solid #f59e0b" : "1px solid #e2e8f0" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+            <p style={{ color: "#64748b", margin: 0, fontSize: "14px", fontWeight: "600", textTransform: "uppercase" }}>Requests</p>
+            <AlertCircle size={20} color={requestsCount > 0 ? "#f59e0b" : "#64748b"} />
+          </div>
+          <h3 style={{ fontSize: "32px", fontWeight: "800", color: requestsCount > 0 ? "#d97706" : "#0f172a", margin: 0 }}>{requestsCount}</h3>
         </div>
         
         <div style={{ background: "white", padding: "24px", borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", border: "1px solid #e2e8f0" }}>

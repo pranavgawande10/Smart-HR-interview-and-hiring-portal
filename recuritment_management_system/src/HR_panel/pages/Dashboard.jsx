@@ -240,63 +240,7 @@ const Dashboard = () => {
         </div>
 
         {/* Upcoming Interviews */}
-        <div style={{
-          background: "white",
-          borderRadius: "12px",
-          padding: "24px",
-          boxShadow: "0 2px 12px rgba(0, 0, 0, 0.08)",
-          border: "1px solid #e2e8f0"
-        }}>
-          <h2 style={{
-            fontSize: "20px",
-            fontWeight: "600",
-            color: "#0f172a",
-            marginBottom: "20px",
-            paddingBottom: "12px",
-            borderBottom: "1px solid #e2e8f0"
-          }}>
-            Upcoming Interviews
-          </h2>
-          
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {[
-              { name: "Sarah Johnson", role: "Frontend Developer", time: "10:00 AM" },
-              { name: "Robert Brown", role: "DevOps Engineer", time: "2:00 PM" },
-              { name: "Lisa Wang", role: "Backend Developer", time: "4:30 PM" }
-            ].map((interview, index) => (
-              <div key={index} style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "16px",
-                background: "#f8fafc",
-                borderRadius: "10px",
-                border: "1px solid #e2e8f0",
-                transition: "all 0.3s"
-              }}>
-                <div style={{ flex: 1 }}>
-                  <h4 style={{ fontSize: "15px", fontWeight: "600", color: "#0f172a", marginBottom: "4px" }}>
-                    {interview.name}
-                  </h4>
-                  <p style={{ fontSize: "13px", color: "#64748b", margin: "0" }}>
-                    {interview.role}
-                  </p>
-                </div>
-                <div style={{
-                  background: "white",
-                  padding: "6px 12px",
-                  borderRadius: "20px",
-                  fontSize: "13px",
-                  fontWeight: "600",
-                  color: "#0f172a",
-                  border: "1px solid #e2e8f0"
-                }}>
-                  {interview.time}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        
       </div>
     </div>
   );

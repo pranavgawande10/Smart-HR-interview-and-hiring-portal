@@ -38,7 +38,7 @@ const CandidateDashboard = () => {
           applications: appsRes.data.count || 0,
           interviews: intsRes.data.count || 0,
         });
-        const jobsRes = await axios.get("http://localhost:3001/api/v1/jobs/all-jobs").catch(() => ({ data: { data: [] } }));
+        const jobsRes = await axios.get("http://localhost:3000/job/all").catch(() => ({ data: { data: [] } }));
         const jobsArray = jobsRes.data.data || jobsRes.data; // Extract array from standard response
         const mappedJobs = jobsArray.slice(0, 4).map(job => ({
           _id: job._id,

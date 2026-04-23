@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { UserCircle, Mail, Phone, MapPin, Briefcase, GraduationCap, Award, Edit2, Save, X, Upload } from "lucide-react";
+import { UserCircle, Mail, Phone, MapPin, Briefcase, Edit2, Save, X } from "lucide-react";
 import axios from "axios";
 
 const CandidateProfile = () => {
@@ -11,92 +11,44 @@ const CandidateProfile = () => {
     location: "Not Provided",
     title: "Candidate",
     experience: "Not Provided",
-    education: "Not Provided",
-    skills: [],
-    bio: "Passionate candidate looking for new opportunities.",
-    resume: "No resume uploaded",
-    profilePhoto: null
   });
 
   const [editedProfile, setEditedProfile] = useState({ ...profile });
 
-useEffect(() => {
-  setEditedProfile(profile);
-}, [profile]);
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await axios.get(
+          "http://localhost:3001/api/v1/candidates/current-user",
+          {
+            withCredentials: true,
+            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          }
+        );
 
-  // useEffect(() => {
-  //   const fetchProfile = async () => {
-  //     try {
-  //       const res = await axios.get("http://localhost:3001/api/v1/candidates/current-user", {
-  //         withCredentials: true,
-  //         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-  //       });
-  //        console.log(res)
+        const user = res.data.message || res.data.data || res.data.user || res.data;
 
-  //       const user = res.data.data;
-  //       const newProfile = {
-  //         name: user.name || "Unknown",
-  //         email: user.email || "",
-  //         phone: user.phone || "Not Provided",
-  //         location: "Not Provided",
-  //         title: "Candidate",
-  //         experience: "Not Provided",
-  //         education: "Not Provided",
-  //         skills: [],
-  //         bio: "Passionate candidate looking for new opportunities.",
-  //         resume: user.resume || "No resume uploaded",
-  //         profilePhoto: user.profilePhoto || null,
-  //       };
-  //       setProfile(newProfile);
-  //       setEditedProfile(newProfile);
-  //     } catch (err) {
-  //       console.error("Error fetching profile", err);
-  //     }
-  //   };
-  //   fetchProfile();
-  // }, []);
+        const newProfile = {
+          name: user.name || "Unknown",
+          email: user.email || "",
+          phone: user.phone || "Not Provided",
+          location: user.location || "Not Provided",
+          title: user.title || "Candidate",
+          experience: user.experience || "Not Provided",
+        };
 
-useEffect(() => {
-  const fetchProfile = async () => {
-    try {
-      const res = await axios.get(
-        "http://localhost:3001/api/v1/candidates/current-user",
-        {
-          withCredentials: true,
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        }
-      );
-      
-      console.log("API RESPONSE:", res.data);
+        setProfile(newProfile);
+        setEditedProfile(newProfile);
+      } catch (err) {
+        console.error("Error fetching profile", err);
+      }
+    };
 
-      // 🔥 FIX: handle different backend formats safely
-      const user = res.data.message || res.data.data || res.data.user || res.data;
+    fetchProfile();
+  }, []);
 
-      const newProfile = {
-        name: user.name || "Unknown",
-        email: user.email || "",
-        phone: user.phone || "Not Provided",
-        location: user.location || "Not Provided",
-        title: user.title || "Candidate",
-        experience: user.experience || "Not Provided",
-        education: user.education || "Not Provided",
-        skills: user.skills || [],
-        bio: user.bio || "Passionate candidate looking for new opportunities.",
-        resume: user.resume || "No resume uploaded",
-        profilePhoto: user.profilePhoto || null,
-      };
-
-      setProfile(newProfile);
-      setEditedProfile(newProfile); // keep sync
-    } catch (err) {
-      console.error("Error fetching profile", err);
-    }
-  };
-
-  fetchProfile();
-}, []);
-
-  const handleSave = () => {
+  const handleSave = async () => {
+    // Logic for API PUT request would go here
     setProfile(editedProfile);
     setIsEditing(false);
   };
@@ -106,17 +58,7 @@ useEffect(() => {
     setIsEditing(false);
   };
 
-  const addSkill = () => {
-    const newSkill = prompt("Enter new skill:");
-    if (newSkill && !editedProfile.skills.includes(newSkill)) {
-      setEditedProfile({ ...editedProfile, skills: [...editedProfile.skills, newSkill] });
-    }
-  };
-
-  const removeSkill = (skillToRemove) => {
-    setEditedProfile({ ...editedProfile, skills: editedProfile.skills.filter(s => s !== skillToRemove) });
-  };
-
+  // Styles
   const gradientStyle = {
     background: "linear-gradient(135deg, rgb(20, 184, 166) 0%, rgb(14, 165, 233) 100%)",
   };
@@ -129,6 +71,9 @@ useEffect(() => {
     cursor: "pointer",
     transition: "all 0.3s ease",
     border: "none",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px"
   };
 
   const sectionStyle = {
@@ -137,183 +82,175 @@ useEffect(() => {
     padding: "24px",
     boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
     border: "1px solid #e2e8f0",
+    height: "fit-content"
   };
 
-  const SectionHeader = ({ icon: Icon, title }) => (
-    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
-      <Icon size={20} color="rgb(20, 184, 166)" />
-      <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#0f172a", margin: 0 }}>{title}</h3>
-    </div>
-  );
+  const inputStyle = {
+    width: "100%",
+    padding: "8px 12px",
+    borderRadius: "6px",
+    border: "1px solid #cbd5e1",
+    fontSize: "14px",
+    marginTop: "4px"
+  };
 
   return (
-    <div>
+    <div style={{ maxWidth: "1000px", margin: "0 auto", padding: "20px" }}>
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px" }}>
+      <div style={{ 
+        display: "flex", 
+        flexDirection: window.innerWidth < 640 ? "column" : "row",
+        justifyContent: "space-between", 
+        alignItems: window.innerWidth < 640 ? "flex-start" : "center", 
+        gap: "20px",
+        marginBottom: "30px" 
+      }}>
         <div>
-          <h1 style={{ fontSize: "28px", fontWeight: "700", color: "#0f172a", marginBottom: "8px" }}>My Profile</h1>
-          <p style={{ fontSize: "16px", color: "#64748b" }}>Manage your personal information and preferences</p>
+          <h1 style={{ fontSize: "28px", fontWeight: "700", color: "#0f172a", margin: 0 }}>My Profile</h1>
+          <p style={{ fontSize: "16px", color: "#64748b" }}>Manage your account details</p>
         </div>
         {!isEditing ? (
           <button onClick={() => setIsEditing(true)} style={{ ...buttonStyle, ...gradientStyle, color: "white" }}>
-            <Edit2 size={16} style={{ marginRight: "8px", verticalAlign: "middle" }} />
-            Edit Profile
+            <Edit2 size={16} /> Edit Profile
           </button>
         ) : (
           <div style={{ display: "flex", gap: "10px" }}>
             <button onClick={handleCancel} style={{ ...buttonStyle, background: "#f1f5f9", color: "#64748b" }}>
-              <X size={16} style={{ marginRight: "8px", verticalAlign: "middle" }} />
-              Cancel
+              <X size={16} /> Cancel
             </button>
             <button onClick={handleSave} style={{ ...buttonStyle, ...gradientStyle, color: "white" }}>
-              <Save size={16} style={{ marginRight: "8px", verticalAlign: "middle" }} />
-              Save Changes
+              <Save size={16} /> Save Changes
             </button>
           </div>
         )}
       </div>
 
-      {/* Two Column Layout */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "24px" }}>
+      {/* Main Content Grid */}
+      <div style={{ 
+        display: "grid", 
+        gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", 
+        gap: "24px" 
+      }}>
         
-        {/* Left Column - Profile Card */}
+        {/* Left Column - Contact Info */}
         <div style={sectionStyle}>
-          <div style={{ textAlign: "center" }}>
+          <div style={{ textAlign: "center", marginBottom: "24px" }}>
             <div style={{
-              width: "120px",
-              height: "120px",
+              width: "100px",
+              height: "100px",
               borderRadius: "50%",
               ...gradientStyle,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              margin: "0 auto 20px auto",
-            }}>
-              <span style={{ fontSize: "48px", color: "white" }}>👤</span>
-            </div>
+              margin: "0 auto 15px auto",
+              fontSize: "40px"
+            }}>👤</div>
             
-            <h2 style={{ fontSize: "22px", fontWeight: "700", color: "#0f172a", marginBottom: "8px" }}>
-              {isEditing ? editedProfile.name : profile.name}
-            </h2>
-            <p style={{ fontSize: "16px", color: "rgb(20, 184, 166)", fontWeight: "500", marginBottom: "16px" }}>
-              {isEditing ? editedProfile.title : profile.title}
-            </p>
-            
-            <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "20px", textAlign: "left" }}>
-              <InfoRow icon={Mail} text={isEditing ? editedProfile.email : profile.email} />
-              <InfoRow icon={Phone} text={isEditing ? editedProfile.phone : profile.phone} />
-              <InfoRow icon={MapPin} text={isEditing ? editedProfile.location : profile.location} />
-            </div>
-
-            {/* Resume Section */}
-            <div style={{ marginTop: "20px", padding: "16px", background: "#f8fafc", borderRadius: "12px" }}>
-              <h3 style={{ fontSize: "14px", fontWeight: "600", color: "#0f172a", marginBottom: "12px" }}>Resume</h3>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <div style={{ background: "#e2e8f0", padding: "8px", borderRadius: "8px" }}>📄</div>
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontWeight: "500", fontSize: "13px", color: "#0f172a" }}>{profile.resume}</p>
-                  <p style={{ fontSize: "11px", color: "#64748b" }}>Uploaded on Jan 15, 2026</p>
-                </div>
-                <button style={{ background: "transparent", border: `1px solid rgb(20, 184, 166)`, color: "rgb(20, 184, 166)", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", cursor: "pointer" }}>
-                  <Upload size={12} style={{ marginRight: "4px", verticalAlign: "middle" }} />
-                  Update
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-          
-          {/* Bio */}
-          <div style={sectionStyle}>
-            <SectionHeader icon={UserCircle} title="About Me" />
             {isEditing ? (
-              <textarea
-                value={editedProfile.bio}
-                onChange={(e) => setEditedProfile({ ...editedProfile, bio: e.target.value })}
-                rows="4"
-                style={{ width: "100%", padding: "12px", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "14px", fontFamily: "inherit", resize: "vertical" }}
-              />
+              <div style={{ textAlign: "left" }}>
+                <label style={{ fontSize: "12px", fontWeight: "600" }}>Full Name</label>
+                <input 
+                  style={inputStyle}
+                  value={editedProfile.name} 
+                  onChange={(e) => setEditedProfile({...editedProfile, name: e.target.value})}
+                />
+              </div>
             ) : (
-              <p style={{ color: "#475569", lineHeight: "1.6", fontSize: "14px" }}>{profile.bio}</p>
+              <h2 style={{ fontSize: "22px", fontWeight: "700", color: "#0f172a", margin: 0 }}>{profile.name}</h2>
             )}
           </div>
 
-          {/* Work Experience */}
-          <div style={sectionStyle}>
-            <SectionHeader icon={Briefcase} title="Work Experience" />
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-              <div>
-                <p style={{ fontSize: "13px", color: "#64748b", marginBottom: "4px" }}>Years of Experience</p>
-                <p style={{ fontSize: "18px", fontWeight: "600", color: "#0f172a" }}>
-                  {isEditing ? editedProfile.experience : profile.experience}
-                </p>
-              </div>
-              <div>
-                <p style={{ fontSize: "13px", color: "#64748b", marginBottom: "4px" }}>Current Role</p>
-                <p style={{ fontSize: "18px", fontWeight: "600", color: "#0f172a" }}>
-                  {isEditing ? editedProfile.title : profile.title}
-                </p>
-              </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px", borderTop: "1px solid #f1f5f9", paddingTop: "20px" }}>
+            <EditableRow 
+              isEditing={isEditing} 
+              icon={Mail} 
+              label="Email Address"
+              value={isEditing ? editedProfile.email : profile.email}
+              onChange={(val) => setEditedProfile({...editedProfile, email: val})}
+            />
+            <EditableRow 
+              isEditing={isEditing} 
+              icon={Phone} 
+              label="Phone Number"
+              value={isEditing ? editedProfile.phone : profile.phone}
+              onChange={(val) => setEditedProfile({...editedProfile, phone: val})}
+            />
+            <EditableRow 
+              isEditing={isEditing} 
+              icon={MapPin} 
+              label="Location"
+              value={isEditing ? editedProfile.location : profile.location}
+              onChange={(val) => setEditedProfile({...editedProfile, location: val})}
+            />
+          </div>
+        </div>
+
+        {/* Right Column - Work Details */}
+        <div style={sectionStyle}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
+            <Briefcase size={20} color="rgb(20, 184, 166)" />
+            <h3 style={{ fontSize: "18px", fontWeight: "600", margin: 0 }}>Professional Details</h3>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            <div>
+              <p style={{ fontSize: "13px", color: "#64748b", marginBottom: "4px" }}>Job Title / Role</p>
+              {isEditing ? (
+                <input 
+                  style={inputStyle}
+                  value={editedProfile.title} 
+                  onChange={(e) => setEditedProfile({...editedProfile, title: e.target.value})}
+                />
+              ) : (
+                <p style={{ fontSize: "16px", fontWeight: "600", color: "#0f172a" }}>{profile.title}</p>
+              )}
             </div>
-          </div>
 
-          {/* Education */}
-          <div style={sectionStyle}>
-            <SectionHeader icon={GraduationCap} title="Education" />
-            <p style={{ fontSize: "15px", color: "#334155" }}>{profile.education}</p>
-          </div>
-
-          {/* Skills */}
-          <div style={sectionStyle}>
-            <SectionHeader icon={Award} title="Skills" />
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-              {(isEditing ? editedProfile.skills : profile.skills).map((skill, idx) => (
-                <span key={idx} style={{
-                  background: "#e6f7f5",
-                  color: "rgb(20, 184, 166)",
-                  padding: "6px 14px",
-                  borderRadius: "20px",
-                  fontSize: "13px",
-                  fontWeight: "500",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                }}>
-                  {skill}
-                  {isEditing && (
-                    <button onClick={() => removeSkill(skill)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "#ef4444", fontSize: "14px" }}>×</button>
-                  )}
-                </span>
-              ))}
-              {isEditing && (
-                <button onClick={addSkill} style={{
-                  background: "transparent",
-                  border: `1px dashed rgb(20, 184, 166)`,
-                  color: "rgb(20, 184, 166)",
-                  padding: "6px 14px",
-                  borderRadius: "20px",
-                  fontSize: "13px",
-                  cursor: "pointer",
-                }}>
-                  + Add Skill
-                </button>
+            <div>
+              <p style={{ fontSize: "13px", color: "#64748b", marginBottom: "4px" }}>Years of Experience</p>
+              {isEditing ? (
+                <input 
+                  style={inputStyle}
+                  value={editedProfile.experience} 
+                  onChange={(e) => setEditedProfile({...editedProfile, experience: e.target.value})}
+                />
+              ) : (
+                <p style={{ fontSize: "16px", fontWeight: "600", color: "#0f172a" }}>{profile.experience}</p>
               )}
             </div>
           </div>
         </div>
+
       </div>
     </div>
   );
 };
 
-// Helper Component for Info Rows
-const InfoRow = ({ icon: Icon, text }) => (
-  <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
-    <Icon size={16} color="#94a3b8" />
-    <span style={{ fontSize: "14px", color: "#475569" }}>{text}</span>
+// Sub-component for clean rows
+const EditableRow = ({ isEditing, icon: Icon, label, value, onChange }) => (
+  <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+    <Icon size={18} color="#94a3b8" style={{ marginTop: isEditing ? "25px" : "2px" }} />
+    <div style={{ flex: 1 }}>
+      {isEditing ? (
+        <>
+          <label style={{ fontSize: "11px", fontWeight: "700", color: "#64748b", textTransform: "uppercase" }}>{label}</label>
+          <input 
+            style={{ 
+              width: "100%", 
+              padding: "6px 10px", 
+              borderRadius: "6px", 
+              border: "1px solid #cbd5e1",
+              fontSize: "14px"
+            }} 
+            value={value} 
+            onChange={(e) => onChange(e.target.value)}
+          />
+        </>
+      ) : (
+        <span style={{ fontSize: "14px", color: "#475569", wordBreak: "break-all" }}>{value}</span>
+      )}
+    </div>
   </div>
 );
 
