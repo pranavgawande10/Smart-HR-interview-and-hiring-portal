@@ -1,5 +1,5 @@
 import express from "express";
-import {updateAvailability , updateCapacity , completeInterview , scheduleInterview,rescheduleInterview, getMyInterviews} from "../controller/interviewer.controller.js";
+import {updateAvailability , updateCapacity , updateSkills, completeInterview , scheduleInterview,rescheduleInterview, getMyInterviews, getProfile, updateProfile} from "../controller/interviewer.controller.js";
 import { authorizeRoles } from "../middleware/role.middleware.js";
 import { verifyJWT } from "../middleware/auth.middleware.js";
 
@@ -10,7 +10,9 @@ router.patch("/capacity", verifyJWT,authorizeRoles("INTERVIEWER"), updateCapacit
 router.patch("/complete-interview/:interviewId", verifyJWT, authorizeRoles("INTERVIEWER"), completeInterview);
 router.post("/schedule/:interviewId", verifyJWT, authorizeRoles("INTERVIEWER"), scheduleInterview);
 router.put("/reschedule/:interviewId", verifyJWT, authorizeRoles("INTERVIEWER"), rescheduleInterview);
+router.patch("/skills", verifyJWT, authorizeRoles("INTERVIEWER"), updateSkills);
 router.get("/my-interviews", verifyJWT, authorizeRoles("INTERVIEWER"), getMyInterviews);
+router.get("/profile", verifyJWT, authorizeRoles("INTERVIEWER"), getProfile);
+router.patch("/profile", verifyJWT, authorizeRoles("INTERVIEWER"), updateProfile);
 
-
-export default router;
+export default router; 

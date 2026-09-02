@@ -345,23 +345,21 @@ export const getResumeForHR = async (req, res) => {
 
     if (!application || !application.resume) {
       return res.status(404).json({
-        message: "Resume not found"
+        message: "Resume not found",
       });
     }
 
-    // 🔥 Cloudinary URLs
-    const viewUrl = application.resume;
-    const downloadUrl = application.resume + "?fl_attachment=true";
+    const downloadUrl = `${application.resume}?fl_attachment=true`;
 
     return res.status(200).json({
-      message: "Resume fetched successfully",
+      message: "Resume ready for download",
       candidate: application.candidate,
-      viewResume: viewUrl,
-      downloadResume: downloadUrl
+      downloadResume: downloadUrl,
     });
-
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({
+      error: error.message,
+    });
   }
 };
 
@@ -501,7 +499,9 @@ export const getShortlistedApplications = async (req, res) => {
         roundsCompleted: completedRounds,
         lastRound: lastInterview.roundNumber,
         isFinalRound: lastInterview.isFinalRound,
-        lastResult: lastInterview.result
+        lastResult: lastInterview.result,
+        lastInterviewId: lastInterview._id,
+        assignedInterviewerId: lastInterview.interviewer
       });
     }
 

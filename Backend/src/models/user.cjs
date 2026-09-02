@@ -55,12 +55,6 @@ const userSchema = new mongoose.Schema(
     },
 
     experienceYears: Number,
-    availabilityStatus: {
-      type: String,
-      enum: ["AVAILABLE", "BUSY", "OFFLINE"],
-      default: "AVAILABLE",
-    },
-
     profilePhoto: String,
   },
   { timestamps: true },

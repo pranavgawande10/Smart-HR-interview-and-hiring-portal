@@ -1,0 +1,146 @@
+import React, { useState } from "react";
+import axios from "axios";
+import { Link, useNavigate } from "react-router-dom";
+const LoginCard = ({ title, role, buttonText, route, ROLE }) => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const getRedirectPath = (normalizedRole) => {
+    if (normalizedRole.includes("hr")) return "/hr";
+    if (normalizedRole.includes("interviewer")) return "/interviewer";
+    if (normalizedRole.includes("candidate") || normalizedRole.includes("student")) return "/candidate";
+    return "/";
+  };
+  //token
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setMessage("");
+    setLoading(true);
+
+    try {
+      const normalizedRole = (role || ROLE || "").toLowerCase();
+      let res;
+
+      if (normalizedRole.includes("candidate") || normalizedRole.includes("student")) {
+        res = await axios.post(
+          "http://localhost:3001/api/v1/candidates/login",
+          { email, password, role: "CANDIDATE" }
+        );
+      } else if (normalizedRole.includes("interviewer") || normalizedRole.includes("hr")) {
+        const payloadRole = normalizedRole.includes("hr") ? "HR" : "INTERVIEWER";
+        res = await axios.post(
+          "http://localhost:3000/login",
+          { email, password, role: payloadRole }
+        );
+      }
+
+
+      setMessage("Login successful ✅");
+
+      const token = res?.data?.message?.accessToken ??
+        res?.data?.token ??
+        res?.data?.accessToken ??
+        res?.data?.data?.token
+
+      if (!token) {
+        setMessage("Token not received from server ❌");
+        return;
+      }
+
+      localStorage.setItem("token", token);
+
+      // const token =
+      //   res?.data?.token ??
+      //   res?.data?.accessToken ??
+      //   res?.data?.data?.token ??
+      //   res?.data?.data?.accessToken ??
+      //   "authenticated_dummy_token";
+
+      // if (token) {
+      //   localStorage.setItem("token", token);
+      //   localStorage.setItem("role", role || ROLE || "User");
+      // }
+
+      const userName = res?.data?.data?.user?.username ?? res?.data?.data?.user?.name ?? res?.data?.name ?? res?.data?.user?.name ?? res?.data?.data?.name ?? res?.data?.candidate?.name ?? (role || ROLE || "User");
+      localStorage.setItem("userName", userName);
+
+      // Always redirect after a successful login response
+      navigate(getRedirectPath(normalizedRole));
+
+      if (res && res.data) {
+        console.log("User Data:", res.data);
+      }
+      console.log(response.data);
+      // localStorage.removeItem("token");
+      // localStorage.setItem("token", response.data.message.accessToken);
+
+    } catch (error) {
+      if (error.response) {
+        setMessage(error.response.data.message || "Login failed ❌");
+      } else {
+        setMessage("Server not reachable ❌");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-900 px-4 relative overflow-hidden">
+      {/* Background Blooms */}
+      <div className="absolute top-[-10%] right-[-5%] w-96 h-96 bg-indigo-600 rounded-full mix-blend-screen filter blur-[100px] opacity-20 animate-blob"></div>
+      <div className="absolute bottom-[-10%] left-[-5%] w-96 h-96 bg-purple-600 rounded-full mix-blend-screen filter blur-[100px] opacity-20 animate-blob animation-delay-2000"></div>
+
+
+      <div className="glass-card p-8 rounded-2xl shadow-2xl w-full max-w-md relative z-10 border border-slate-700/50">
+
+        <h2 className="text-3xl font-extrabold text-white text-center mb-2 outfit-font">{title}</h2>
+        <p className="text-center text-indigo-300 font-medium mb-8">Login as {ROLE}</p>
+
+        <form className="space-y-5" onSubmit={handleSubmit}>
+          <input
+            type="email"
+            placeholder="Email address"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+          />
+
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+          />
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-gradient-to-r from-indigo-500 to-cyan-500 text-white font-bold py-3 rounded-xl hover:shadow-[0_0_20px_rgba(99,102,241,0.4)] transition-all hover:-translate-y-0.5 disabled:opacity-60 disabled:hover:translate-y-0 disabled:shadow-none mt-2"
+          >
+            {loading ? "Logging in..." : buttonText}
+          </button>
+        </form>
+
+        {message && (
+          <p className="text-center mt-6 text-sm font-medium text-rose-400 bg-rose-500/10 py-2 rounded-lg border border-rose-500/20">{message}</p>
+        )}
+
+        <p className="text-center text-sm text-slate-400 mt-6">
+          <Link to={route} className="hover:text-indigo-400 font-medium transition-colors">Forgot password?</Link>
+        </p>
+      </div>
+    </div>
+  );
+};
+
+export default LoginCard;
+

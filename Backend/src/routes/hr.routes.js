@@ -99,4 +99,19 @@ router.get(
   getHRInterviews
 );
 
+router.get(
+  "/interviewers",
+  verifyJWT,
+  authorizeRoles("HR"),
+  async (req, res) => {
+    try {
+      const { default: User } = await import("../models/user.cjs");
+      const interviewers = await User.find({ role: "INTERVIEWER" }).select("_id name");
+      res.json({ interviewers });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  }
+);
+
 export default router;
