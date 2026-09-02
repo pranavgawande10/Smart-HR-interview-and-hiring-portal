@@ -1,0 +1,22 @@
+export const SKILLS_LIST = [
+  "JavaScript", "Python", "Java", "C++", "C#", "Ruby", "PHP", "Swift", "Kotlin", "Go",
+  "Rust", "TypeScript", "HTML", "CSS", "SQL", "NoSQL", "React", "Angular", "Vue.js", "Svelte",
+  "Node.js", "Express.js", "Django", "Flask", "Spring Boot", "Ruby on Rails", "Laravel", "ASP.NET",
+  "GraphQL", "REST APIs", "MongoDB", "PostgreSQL", "MySQL", "Oracle", "Redis", "Firebase",
+  "Docker", "Kubernetes", "AWS", "Google Cloud Platform (GCP)", "Microsoft Azure", "Terraform",
+  "Ansible", "Jenkins", "Git", "GitHub", "GitLab", "Bitbucket", "CI/CD", "Linux", "Unix",
+  "Bash Scripting", "PowerShell", "Agile", "Scrum", "Kanban", "Jira", "Trello", "Confluence",
+  "Figma", "Adobe XD", "Sketch", "Photoshop", "Illustrator", "UI/UX Design", "Wireframing",
+  "Prototyping", "Machine Learning", "Deep Learning", "Artificial Intelligence", "Data Science",
+  "Data Analysis", "Pandas", "NumPy", "TensorFlow", "PyTorch", "Scikit-Learn", "Computer Vision",
+  "Natural Language Processing (NLP)", "Big Data", "Hadoop", "Spark", "Kafka", "Elasticsearch",
+  "Cybersecurity", "Penetration Testing", "Ethical Hacking", "Cryptography", "Network Security",
+  "Information Security", "Blockchain", "Smart Contracts", "Solidity", "Web3", "Ethereum",
+  "Mobile App Development", "Android Development", "iOS Development", "React Native", "Flutter",
+  "Dart", "Xamarin", "Game Development", "Unity", "Unreal Engine", "C", "Objective-C",
+  "MATLAB", "R", "SAS", "SPSS", "Tableau", "Power BI", "Data Visualization", "Business Intelligence",
+  "SEO", "SEM", "Google Analytics", "Digital Marketing", "Content Creation", "Copywriting",
+  "Social Media Management", "Email Marketing", "Salesforce", "HubSpot", "CRM", "ERP",
+  "Project Management", "Product Management", "Leadership", "Team Building", "Communication",
+  "Problem Solving", "Critical Thinking", "Time Management", "Public Speaking", "Negotiation"
+];

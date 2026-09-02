@@ -15,7 +15,7 @@ const router = express.Router();
 // Candidate Routes
 
 router.post(
-  "/apply/:jobId",
+  "/apply/:id",
   verifyJWT,
   authorizeRoles("CANDIDATE"),
   upload.single("resume"),   

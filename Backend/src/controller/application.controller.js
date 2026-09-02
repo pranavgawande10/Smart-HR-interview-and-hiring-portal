@@ -11,7 +11,7 @@ POST /api/v1/application/apply/:jobId
 */
 
 export const applyForJob = asyncHandler(async (req, res) => {
-  const { jobId } = req.params;
+  const { id: jobId } = req.params;
   const { fullName, email, phone, coverLetter } = req.body;
 
   if (!fullName || !email || !phone) {
@@ -100,6 +100,7 @@ GET /api/v1/application/job/:jobId
 
 export const getApplicantsForJob = asyncHandler(async (req, res) => {
   const { jobId } = req.params;
+  const { default: Interview } = await import("../models/interview.model.js");
 
   const applications = await Application.find({
     job: jobId,
@@ -107,10 +108,21 @@ export const getApplicantsForJob = asyncHandler(async (req, res) => {
     .populate("candidate", "name email profilePhoto")
     .sort({ createdAt: -1 });
 
+  const result = [];
+  for (let app of applications) {
+    const lastInterview = await Interview.findOne({ application: app._id }).sort({ createdAt: -1 });
+    result.push({
+      ...app._doc,
+      lastInterviewId: lastInterview ? lastInterview._id : null,
+      assignedInterviewerId: lastInterview ? lastInterview.interviewer : null,
+      lastRoundName: lastInterview ? lastInterview.round : "None"
+    });
+  }
+
   return res.status(200).json({
     success: true,
-    count: applications.length,
-    applications,
+    count: result.length,
+    applications: result,
   });
 });
 
@@ -130,6 +142,7 @@ export const updateApplicationStatus = asyncHandler(async (req, res) => {
     "shortlisted",
     "interview",
     "rejected",
+    "selected"
   ];
 
   if (!allowedStatus.includes(status)) {

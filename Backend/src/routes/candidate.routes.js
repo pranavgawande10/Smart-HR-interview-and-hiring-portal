@@ -7,7 +7,12 @@ import {
   updateProfilePhoto,
   changePassword,
   getCurrentUser,
-  respondToInterview
+  respondToInterview,
+  getMyInterviews,
+  requestRescheduleCandidate,
+  updateProfile,
+  getJobById,
+  resetPassword,
 } from "../controller/candidate.controller.js";
 
 import { upload } from "../middleware/multer.middleware.js";
@@ -25,6 +30,9 @@ router.post(
 // Login
 router.post("/login", loginUser);
 
+// Reset Password
+router.post("/reset-password", resetPassword);
+
 // Change Password (🔒 FIXED)
 router.patch(
   "/change-password",
@@ -32,7 +40,7 @@ router.patch(
   authorizeRoles("CANDIDATE"),
   changePassword
 );
-
+ 
 // Logout
 router.post(
   "/logout",
@@ -65,5 +73,24 @@ router.patch(
   authorizeRoles("CANDIDATE"),
   respondToInterview
 );
+
+// Get My Interviews
+router.get(
+  "/my-interviews",
+  verifyJWT,
+  authorizeRoles("CANDIDATE"),
+  getMyInterviews
+);
+
+router.patch("/request-reschedule/:interviewId", verifyJWT, authorizeRoles("CANDIDATE"), requestRescheduleCandidate);
+router.get("/job/:jobId", verifyJWT, authorizeRoles("CANDIDATE"), getJobById);
+
+router.put(
+  "/profile",
+  verifyJWT,
+  authorizeRoles("CANDIDATE"),
+  updateProfile
+);
+
 
 export default router;

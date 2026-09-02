@@ -40,8 +40,14 @@ jobRouter.post("/job/create", userAuth, authorizeRoles("HR"), async (req, res) =
     }
 });
 
-
-
+jobRouter.get("/job/all", async (req, res) => {
+    try {
+        const jobs = await Job.find().populate("createdBy", "name companyName");
+        res.json(jobs);
+    } catch (error) {
+        res.status(400).send("Error: " + error.message);
+    }
+});
 
 jobRouter.get("/job/myjobs", userAuth, async (req, res) => {
     try {
@@ -91,7 +97,7 @@ jobRouter.patch("/job/update/:id", userAuth, authorizeRoles("HR"), async (req, r
         res.status(400).json({ message: "Error updating job", error: error.message });
     }
 });
-
+ 
 // Delete a job by ID
 jobRouter.delete("/job/delete/:id", userAuth, authorizeRoles("HR"), async (req, res) => {
     try {

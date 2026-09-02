@@ -41,11 +41,12 @@ const generateAccessAndRefreshTokens = async (userId) => {
 };
 
 const registerUser = asyncHandler(async (req, res) => {
-  const { email, name, password , role} = req.body;
 
-  if ([email, name, password , role].some((field) => !field?.trim())) {
+  const { email, name, password, role } = req.body;
+ 
+  if ([email, name, password].some((field) => !field?.trim())) {
     throw new ApiError(400, "All fields are required");
-  }
+  } 
 
   const existedUser = await User.findOne({
     $or: [ { email }],
@@ -81,7 +82,7 @@ const registerUser = asyncHandler(async (req, res) => {
     email,
     name,
     password : passwordHash,
-    role,
+    role: role?.toUpperCase(),
     // profilePhoto: profilePhoto.url,
   });
 
@@ -259,7 +260,7 @@ const updateProfilePhoto = asyncHandler(async (req, res) => {
   }
 
   const user = await User.findByIdAndUpdate(
-    req.candidate?._id,
+    req.user?._id,
     {
       $set: {
         profilePhoto: profilePhoto.url,
@@ -339,19 +340,87 @@ const changePassword = asyncHandler(async (req, res) => {
     );
 }); 
 
-const getCurrentUser = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user._id).select(
-    "-password",
+const resetPassword = asyncHandler(async (req, res) => {
+  const { email, newPassword, confirmPassword } = req.body;
+
+  if (!email || !newPassword || !confirmPassword) {
+      throw new ApiError(400, "All fields are required");
+  }
+
+  if (newPassword !== confirmPassword) {
+      throw new ApiError(400, "Passwords do not match");
+  }
+
+  const user = await User.findOne({ email });
+
+  if (!user) {
+      throw new ApiError(404, "User not found");
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  user.password = hashedPassword;
+  
+  await user.save({ validateBeforeSave: false });
+
+  return res.status(200).json(
+    new ApiResponse(200, null, "Password reset successfully")
   );
+});
 
-  const data = {
-    name: user.name,
-    email: user.email,
-  };
+const getCurrentUser = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id)
+    .select("-password");
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, data, "Current User Fetched Successfully"));
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        name: user.name,
+        email: user.email,
+        skills: user.skills,
+        experienceYears: user.experienceYears,
+        profilePhoto: user.profilePhoto,
+      },
+      "Current User Fetched Successfully"
+    )
+  );
+});
+
+const updateProfile = asyncHandler(async (req, res) => {
+  const {
+    name,
+    email,
+    skills,
+    experienceYears,
+  } = req.body;
+
+  const updatedUser = await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: {
+        ...(name !== undefined && { name }),
+        ...(email !== undefined && { email }),
+        ...(skills !== undefined && { skills }),
+        ...(experienceYears !== undefined && { experienceYears }),
+      },
+    },
+    {
+      new: true,
+      runValidators: true,
+    }
+  ).select("-password");
+
+  if (!updatedUser) {
+    throw new ApiError(404, "User not found");
+  }
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      updatedUser,
+      "Profile updated successfully"
+    )
+  );
 });
 
 export {
@@ -362,9 +431,26 @@ export {
   getCurrentUser,
   changePassword,
   updateProfilePhoto,
+  updateProfile,
+  resetPassword,
 };
 
+export const getMyInterviews = async (req, res) => {
+  try {
+    const interviews = await Interview.find({ candidate: req.user._id })
+      .populate("job", "title company location")
+      .populate("interviewer", "name email")
+      .sort({ scheduledAt: 1 });
 
+    res.status(200).json({
+      success: true,
+      count: interviews.length,
+      interviews
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
 export const respondToInterview = async (req, res) => {
   try {
@@ -402,6 +488,37 @@ export const respondToInterview = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+export const requestRescheduleCandidate = asyncHandler(async (req, res) => {
+  const { interviewId } = req.params;
+  const { reason } = req.body;
+
+  const interview = await Interview.findById(interviewId);
+  if (!interview || interview.candidate.toString() !== req.user._id.toString()) {
+    throw new ApiError(403, "Unauthorized");
+  }
+
+  // Set the "Action Required" status for interviewer
+  interview.candidateResponse = "REQUEST_RESCHEDULE";
+  interview.rescheduleReason = reason; 
+  await interview.save();
+
+  res.status(200).json(new ApiResponse(200, interview, "Request sent"));
+});
+
+export const getJobById = asyncHandler(async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.jobId);
+
+    if (!job) {
+      return res.status(404).json({ message: "Job not found" });
+    }
+
+    res.status(200).json(job);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
 
 
 

@@ -1,65 +1,69 @@
 const express = require("express");
 const authRouter = express.Router();
-const User  = require("../models/user.js");
-const {signupValidation} = require("../utils/validation.js");
-const bcrypt =  require("bcrypt");
+const User = require("../models/user.js");
+const { signupValidation } = require("../utils/validation.js");
+const bcrypt = require("bcrypt");
 const validator = require("validator");
 const jwt = require("jsonwebtoken");
 const sendEmail = require("../utils/sendEmail.js");
+const { userAuth } = require("../middlewares/auth.js");
 
 
 
-authRouter.post("/signup" , async (req,res)=>{
+authRouter.post("/signup", async (req, res) => {
     // console.log(req.body);
-    
 
-    try{
+
+    try {
         //validation of data
         signupValidation(req);
 
         //encrypt the password
-        const { 
-  name, 
-  email, 
-  password, 
-  companyName, 
-  role, 
-  skills, 
-  experienceYears 
-} = req.body;
-        const passwordHash = await bcrypt.hash(password , 10);
+        const {
+            name,
+            email,
+            password,
+            companyName,
+            role,
+            skills,
+            experienceYears
+        } = req.body;
+        const passwordHash = await bcrypt.hash(password, 10);
 
-        
+
 
         //create a new instance of user model
-        const user = new User({
-    name,
-    email,
-    password: passwordHash,
-    role: role || "HR", 
-    companyName: role === "HR" ? companyName : undefined,
-    skills: role === "INTERVIEWER" ? skills : undefined,
-    experienceYears: role === "INTERVIEWER" ? experienceYears : undefined
-});
+        const user = new User({ 
+
+
+            name,
+            email,
+            password: passwordHash,
+            role: role || "HR",
+            companyName: role === "HR" ? companyName : undefined,
+            skills: role === "INTERVIEWER" ? skills : undefined,
+            experienceYears: role === "INTERVIEWER" ? experienceYears : undefined
+        });
 
         const data = req.body;
         await user.save();
         res.send("user data saved successfully!");
     }
-    catch(err)
-    {
+    catch (err) {
         res.status(400).send("data not saved!" + err);
     }
-    
+
 });
 
 authRouter.post("/login", async (req, res) => {
     try {
+
         const { email, password, role } = req.body;
 
         if (!email || !password || !role) {
             return res.status(400).json({ message: "All fields are required!" });
         }
+
 
         if (!validator.isEmail(email)) {
             return res.status(400).json({ message: "Invalid email format" });
@@ -86,14 +90,15 @@ authRouter.post("/login", async (req, res) => {
 
         res.cookie("token", token, {
             httpOnly: true,
-            secure: false, 
+            secure: false,
             maxAge: 60 * 60 * 1000
         });
 
         res.status(200).json({
             message: "Login successful",
             role: user.role,
-            name: user.name
+            name: user.name,
+            token
         });
 
     } catch (error) {
@@ -101,80 +106,140 @@ authRouter.post("/login", async (req, res) => {
     }
 });
 
-authRouter.post("/logout" , (req,res) =>{
-    res.cookie("token" , null ,{
-        expires :new Date(Date.now()), 
+authRouter.post("/logout", (req, res) => {
+    res.cookie("token", null, {
+        expires: new Date(Date.now()),
     });
 
     res.send("Logout successfully!");
 });
 
-authRouter.post("/forgotpassword", async (req, res) => {
-    try {
-        const { email } = req.body;
+// authRouter.post("/forgotpassword", async (req, res) => {
+//     try {
+//         const { email } = req.body;
 
-        if (!email) {
-            throw new Error("Email is required");
+//         if (!email) {
+//             throw new Error("Email is required");
+//         }
+
+//         const user = await User.findOne({ email });
+//         if (!user) {
+//             throw new Error("User not found");
+//         }
+
+//         const resetToken = jwt.sign(
+//             { _id: user._id },
+//             process.env.JWT_SECRET,
+//             { expiresIn: "15m" }
+//         );
+
+//         const resetLink = `${process.env.RESET_PASSWORD_URL}?token=${resetToken}`;
+//         console.log(resetLink);
+
+//         await sendEmail(
+//             user.email,
+//             "Reset Your Password",
+//             `
+//             <p>Hello ${user.name},</p>
+//             <p>Click below to reset your password:</p>
+//             <a href="${resetLink}">${resetLink}</a>
+//             <p>This link will expire in 15 minutes.</p>
+//             `
+//         );
+
+//         res.send("Password reset link sent to email");
+
+//     } catch (error) {
+//         res.status(400).send("Error: " + error.message);
+//     }
+// });
+
+// authRouter.post("/resetpassword", async (req, res) => {
+//     try {
+//         const { token, newPassword } = req.body;
+
+//         if (!token || !newPassword) {
+//             throw new Error("Token and password required");
+//         }
+
+//         const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+//         const user = await User.findById(decoded._id);
+//         if (!user) {
+//             throw new Error("Invalid token");
+//         }
+
+//         const hashedPassword = await bcrypt.hash(newPassword, 10);
+//         user.password = hashedPassword;
+
+//         await user.save();
+
+//         res.send("Password reset successful");
+
+//     } catch (error) {
+//         res.status(400).send("Error: " + error.message);
+//     }
+// });
+
+
+authRouter.post("/resetPassword", async (req, res) => {
+    try {
+        const { email, newPassword, confirmPassword } = req.body;
+
+        if (!email || !newPassword || !confirmPassword) {
+            throw new Error("All fields are required");
+        }
+
+        if (newPassword !== confirmPassword) {
+            throw new Error("Passwords do not match");
         }
 
         const user = await User.findOne({ email });
+
         if (!user) {
             throw new Error("User not found");
         }
 
-        const resetToken = jwt.sign(
-            { _id: user._id },
-            process.env.JWT_SECRET,
-            { expiresIn: "15m" }
-        );
-
-        const resetLink = `${process.env.RESET_PASSWORD_URL}?token=${resetToken}`;
-        console.log(resetLink);
-
-        await sendEmail(
-            user.email,
-            "Reset Your Password",
-            `
-            <p>Hello ${user.name},</p>
-            <p>Click below to reset your password:</p>
-            <a href="${resetLink}">${resetLink}</a>
-            <p>This link will expire in 15 minutes.</p>
-            `
-        );
-
-        res.send("Password reset link sent to email");
-
-    } catch (error) {
-        res.status(400).send("Error: " + error.message);
-    }
-});
-
-authRouter.post("/resetpassword", async (req, res) => {
-    try {
-        const { token, newPassword } = req.body;
-
-        if (!token || !newPassword) {
-            throw new Error("Token and password required");
-        }
-
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-        const user = await User.findById(decoded._id);
-        if (!user) {
-            throw new Error("Invalid token");
-        }
-
         const hashedPassword = await bcrypt.hash(newPassword, 10);
+
         user.password = hashedPassword;
 
         await user.save();
 
-        res.send("Password reset successful");
+        res.status(200).json({
+            message: "Password reset successfully"
+        });
 
     } catch (error) {
-        res.status(400).send("Error: " + error.message);
+        res.status(400).json({
+            message: error.message
+        });
     }
 });
 
+
+authRouter.patch("/changepassword", userAuth, async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        const user = req.user;
+
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ message: "Both current and new passwords are required" });
+        }
+
+        const isPasswordValid = await user.validatePassword(currentPassword);
+        if (!isPasswordValid) {
+            return res.status(400).json({ message: "Invalid current password" });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        user.password = hashedPassword;
+        await user.save();
+
+        res.status(200).json({ message: "Password changed successfully" });
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+});
 
 module.exports = authRouter;
